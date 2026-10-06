@@ -95,7 +95,7 @@ export default function MemoriesContainer() {
       <div className="w-full max-w-6xl mx-auto p-6 pt-32 pb-24">
         <div className="text-center mb-16 space-y-4">
           <h1 className="font-serif text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100">Our Memories</h1>
-          <p className="font-sans text-gray-500 dark:text-gray-400 font-light">Snapshots of our time together.</p>
+          <p className="font-serif italic text-lg text-rose-900/80 dark:text-rose-100/80">Snapshots of our time together.</p>
         </div>
         <MemoriesGallery memories={memories} />
       </div>
