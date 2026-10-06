@@ -1,3 +1,5 @@
+'use client'
+
 import { useState, useEffect } from 'react'
 import { fetchMemories, setSessionAuthorized } from '@/lib/storage'
 import MemoriesGallery from './MemoriesGallery'
