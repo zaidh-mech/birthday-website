@@ -21,7 +21,7 @@ export default function ThemeToggle() {
   return (
     <button 
       onClick={() => setTheme(isNightMode ? 'light' : 'dark')}
-      className={`fixed top-6 right-6 z-50 p-3 rounded-full backdrop-blur-md transition-all duration-700 shadow-sm ${
+      className={`fixed bottom-6 right-6 md:bottom-auto md:top-6 md:right-6 z-50 p-3 rounded-full backdrop-blur-md transition-all duration-700 shadow-sm ${
         isNightMode ? 'bg-white/10 text-yellow-100 hover:bg-white/20' : 'bg-white/50 text-indigo-900 hover:bg-white/80'
       }`}
     >

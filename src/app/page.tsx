@@ -19,13 +19,13 @@ export default function Home() {
   }
 
   return (
-    <main className="flex-1 flex flex-col items-center justify-center p-6 relative overflow-hidden transition-colors duration-1000">
+    <main className="flex-1 flex flex-col items-center justify-center p-6 pt-32 pb-24 min-h-screen relative overflow-hidden transition-colors duration-1000">
       
       <motion.div 
         variants={containerVars}
         initial="hidden"
         animate="show"
-        className="max-w-3xl text-center space-y-10 z-10 transition-colors duration-1000"
+        className="max-w-3xl text-center space-y-8 md:space-y-10 z-10 transition-colors duration-1000"
       >
         <motion.div variants={itemVars} className="flex justify-center">
           <div className="px-5 py-2 backdrop-blur-md rounded-full shadow-sm flex items-center gap-3 transition-colors duration-1000 bg-white/40 dark:bg-white/10 border border-rose-100 dark:border-white/20">
@@ -36,7 +36,7 @@ export default function Home() {
           </div>
         </motion.div>
 
-        <motion.h1 variants={itemVars} className="font-serif text-6xl md:text-8xl font-bold tracking-tight leading-none transition-colors duration-1000 text-gray-900 dark:text-gray-100">
+        <motion.h1 variants={itemVars} className="font-serif text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-none transition-colors duration-1000 text-gray-900 dark:text-gray-100">
           Happy birthday,<br />
           <span className="font-dancing font-normal pr-4 transition-colors duration-1000 text-rose-400 dark:text-purple-300">my everything.</span>
         </motion.h1>
