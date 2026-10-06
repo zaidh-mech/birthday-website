@@ -1,49 +1,56 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Heart } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 
 export default function Home() {
+  const containerVars = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15,
+        delayChildren: 0.2,
+      }
+    }
+  }
+
+  const itemVars = {
+    hidden: { opacity: 0, y: 30, filter: 'blur(5px)' },
+    show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] as const } }
+  }
+
   return (
     <main className="flex-1 flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      {/* Background decorations */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-rose-100 rounded-full blur-[100px] opacity-50 mix-blend-multiply" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-amber-100 rounded-full blur-[100px] opacity-50 mix-blend-multiply" />
-      
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1, ease: "easeOut" }}
-        className="max-w-2xl text-center space-y-8 z-10"
+        variants={containerVars}
+        initial="hidden"
+        animate="show"
+        className="max-w-3xl text-center space-y-10 z-10"
       >
-        <motion.div 
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.5, type: "spring", stiffness: 100 }}
-          className="flex justify-center"
-        >
-          <div className="px-4 py-2 bg-white/50 backdrop-blur-sm rounded-full shadow-sm border border-rose-100 flex items-center gap-2">
-            <span className="text-rose-400">✦</span>
-            <span className="text-sm font-medium text-gray-700 tracking-wide uppercase">A little world, made for you</span>
+        <motion.div variants={itemVars} className="flex justify-center">
+          <div className="px-5 py-2 bg-white/40 backdrop-blur-md rounded-full shadow-sm border border-rose-100 flex items-center gap-3">
+            <Sparkles className="w-4 h-4 text-rose-400" />
+            <span className="text-xs font-semibold text-rose-500 tracking-[0.2em] uppercase">A little world, made for you</span>
           </div>
         </motion.div>
 
-        <h1 className="font-serif text-5xl md:text-7xl font-bold tracking-tight text-gray-900 leading-tight">
+        <motion.h1 variants={itemVars} className="font-serif text-6xl md:text-8xl font-bold tracking-tight text-gray-900 leading-none">
           Happy birthday,<br />
-          <span className="text-rose-400 italic">my everything.</span>
-        </h1>
+          <span className="font-dancing text-rose-400 font-normal pr-4">my everything.</span>
+        </motion.h1>
         
-        <p className="font-sans text-lg md:text-xl text-gray-600 leading-relaxed font-light">
-          A little birthday universe holding my letters to you, our memories, and all the little moments we share. Just for you.
-        </p>
+        <motion.p variants={itemVars} className="font-sans text-xl md:text-2xl text-gray-600 leading-relaxed font-light max-w-2xl mx-auto">
+          A tiny universe holding my letters to you, our memories, and all the quiet moments we share. Just for you.
+        </motion.p>
 
         <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1, duration: 1 }}
-          className="pt-8 text-sm text-gray-400 uppercase tracking-widest flex items-center justify-center gap-2"
+          variants={itemVars}
+          className="pt-12 text-xs text-gray-400 uppercase tracking-[0.3em] flex items-center justify-center gap-4"
         >
-          <span>✦</span> Explore the chapters above <span>✦</span>
+          <span className="w-12 h-px bg-gray-200" />
+          Explore the chapters above
+          <span className="w-12 h-px bg-gray-200" />
         </motion.div>
       </motion.div>
     </main>

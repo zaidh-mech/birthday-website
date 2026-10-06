@@ -37,3 +37,4 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #d4a373;
 }
+@media (pointer: fine) { * { cursor: none !important; } }
