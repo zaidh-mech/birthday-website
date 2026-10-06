@@ -20,16 +20,13 @@ export default function MemoriesGallery({ memories }: { memories: Memory[] }) {
             layoutId={`memory-${memory.id}`}
             key={memory.id}
             onClick={() => setSelectedId(memory.id)}
-            className="break-inside-avoid relative rounded-2xl overflow-hidden cursor-pointer group shadow-sm hover:shadow-md transition-shadow"
+            className="break-inside-avoid relative rounded-2xl overflow-hidden cursor-pointer group shadow-sm hover:shadow-md transition-shadow mb-6"
           >
-            <div className="relative w-full" style={{ paddingBottom: '100%' /* Just a fallback, but we will use an img tag without fixed height to let it define the height naturally */}}>
-               <img 
-                 src={memory.imagePath} 
-                 alt={memory.title} 
-                 className="w-full h-auto object-cover absolute top-0 left-0" 
-                 style={{ position: 'relative' }} 
-               />
-            </div>
+             <img 
+               src={memory.imagePath} 
+               alt={memory.title} 
+               className="w-full h-auto object-cover block" 
+             />
             
             <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
               <h3 className="text-white font-serif text-xl font-bold">{memory.title}</h3>
