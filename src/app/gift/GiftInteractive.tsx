@@ -368,7 +368,7 @@ export default function GiftInteractive() {
                   It&apos;s a Date!
                 </h2>
                 <p className="mt-4 text-gray-600 dark:text-gray-300 font-medium tracking-widest uppercase text-sm">
-                  You&apos;re officially invited
+                  Mwah, I love youuuuuu
                 </p>
               </div>
               
@@ -386,7 +386,7 @@ export default function GiftInteractive() {
                   <div className="absolute bottom-4 right-4 text-rose-300 dark:text-rose-700/50">✦</div>
 
                   <h3 className="font-serif text-3xl font-bold text-rose-900 dark:text-rose-100 mb-8">
-                    5-Year Anniversary
+                    Our Day
                   </h3>
 
                   <div className="space-y-6 text-left">
