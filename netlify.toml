@@ -1,0 +1,7 @@
+[build]
+  command = "npm run build"
+  publish = "out"
+
+[build.environment]
+  PAGES_BASE_PATH = ""
+  NODE_VERSION = "20"

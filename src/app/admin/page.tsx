@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation'
+import AdminLettersPage from './letters/page'
 
 export default function AdminPage() {
-  redirect('/admin/letters')
+  return <AdminLettersPage />
 }

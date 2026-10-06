@@ -1,65 +1,144 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { createMemory } from '@/app/actions/data'
-import { useFormStatus } from 'react-dom'
+import { saveMemory } from '@/lib/storage'
+import { Memory } from '@/data/initialData'
+import { Upload, Link as LinkIcon, Image as ImageIcon } from 'lucide-react'
 
-function SubmitButton() {
-  const { pending } = useFormStatus()
-  return (
-    <button 
-      type="submit" 
-      disabled={pending}
-      className="bg-gray-900 text-white px-6 py-2 rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50"
-    >
-      {pending ? 'Uploading...' : 'Save Memory'}
-    </button>
-  )
-}
-
-export default function UploadForm() {
+export default function UploadForm({ onMemorySaved }: { onMemorySaved: (memory: Memory) => void }) {
   const formRef = useRef<HTMLFormElement>(null)
+  const [title, setTitle] = useState('')
+  const [caption, setCaption] = useState('')
   const [preview, setPreview] = useState<string | null>(null)
+  const [imageUrlInput, setImageUrlInput] = useState('')
+  const [useUrlMode, setUseUrlMode] = useState(false)
+  const [uploading, setUploading] = useState(false)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      setPreview(URL.createObjectURL(file))
+      const reader = new FileReader()
+      reader.onload = () => {
+        setPreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
     } else {
       setPreview(null)
     }
   }
 
+  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImageUrlInput(e.target.value)
+    setPreview(e.target.value || null)
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const finalImage = useUrlMode ? imageUrlInput : preview
+    if (!finalImage || !title || !caption) {
+      alert('Please fill out all fields and select or link a photo.')
+      return
+    }
+
+    setUploading(true)
+    const newMemory = saveMemory({
+      title,
+      caption,
+      imagePath: finalImage,
+    })
+
+    onMemorySaved(newMemory)
+    setTitle('')
+    setCaption('')
+    setPreview(null)
+    setImageUrlInput('')
+    formRef.current?.reset()
+    setUploading(false)
+  }
+
   return (
-    <form 
-      ref={formRef}
-      action={async (formData) => {
-        await createMemory(formData)
-        formRef.current?.reset()
-        setPreview(null)
-      }} 
-      className="space-y-4"
-    >
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+      <div className="flex gap-4 border-b border-gray-100 pb-3">
+        <button
+          type="button"
+          onClick={() => setUseUrlMode(false)}
+          className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider pb-1 transition-colors ${
+            !useUrlMode ? 'text-rose-600 border-b-2 border-rose-600' : 'text-gray-400 hover:text-gray-600'
+          }`}
+        >
+          <Upload className="w-3.5 h-3.5" /> Upload Photo
+        </button>
+        <button
+          type="button"
+          onClick={() => setUseUrlMode(true)}
+          className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider pb-1 transition-colors ${
+            useUrlMode ? 'text-rose-600 border-b-2 border-rose-600' : 'text-gray-400 hover:text-gray-600'
+          }`}
+        >
+          <LinkIcon className="w-3.5 h-3.5" /> Photo URL
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
-          <input type="text" name="title" placeholder="Memory Title" required className="px-4 py-2 border rounded-lg w-full" />
-          <textarea name="caption" placeholder="Caption/Story behind the photo..." rows={4} required className="px-4 py-2 border rounded-lg w-full custom-scrollbar"></textarea>
+          <input 
+            type="text" 
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Memory Title (e.g. Paris in November)" 
+            required 
+            className="px-4 py-2.5 border border-gray-200 rounded-xl w-full text-sm focus:outline-none focus:ring-2 focus:ring-rose-200" 
+          />
+          <textarea 
+            value={caption}
+            onChange={(e) => setCaption(e.target.value)}
+            placeholder="Caption or story behind this photo..." 
+            rows={4} 
+            required 
+            className="px-4 py-3 border border-gray-200 rounded-xl w-full text-sm focus:outline-none focus:ring-2 focus:ring-rose-200 custom-scrollbar"
+          ></textarea>
           
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-            <input type="file" name="file" accept="image/*" required onChange={handleFileChange} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100 cursor-pointer" />
-          </div>
+          {useUrlMode ? (
+            <input 
+              type="url" 
+              value={imageUrlInput}
+              onChange={handleUrlChange}
+              placeholder="Paste direct image URL (https://...)" 
+              required 
+              className="px-4 py-2.5 border border-gray-200 rounded-xl w-full text-sm focus:outline-none focus:ring-2 focus:ring-rose-200" 
+            />
+          ) : (
+            <div className="border-2 border-dashed border-gray-200 rounded-xl p-5 text-center bg-gray-50/50">
+              <input 
+                type="file" 
+                accept="image/*" 
+                required={!preview}
+                onChange={handleFileChange} 
+                className="block w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100 cursor-pointer" 
+              />
+            </div>
+          )}
         </div>
         
-        <div className="bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden h-64 md:h-auto">
+        <div className="bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-center overflow-hidden min-h-[160px] md:h-auto">
           {preview ? (
-            <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+            <img src={preview} alt="Preview" className="w-full h-full max-h-60 object-cover" />
           ) : (
-            <span className="text-gray-400 font-light">Image Preview</span>
+            <div className="flex flex-col items-center text-gray-400 gap-1">
+              <ImageIcon className="w-8 h-8 opacity-40" />
+              <span className="text-xs font-light">Image Preview</span>
+            </div>
           )}
         </div>
       </div>
       
-      <SubmitButton />
+      <button 
+        type="submit" 
+        disabled={uploading}
+        className="bg-gray-900 text-white px-6 py-2.5 rounded-xl font-medium text-sm hover:bg-gray-800 transition-colors disabled:opacity-50"
+      >
+        {uploading ? 'Saving Memory...' : 'Save Memory'}
+      </button>
     </form>
   )
 }

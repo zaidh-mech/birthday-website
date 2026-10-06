@@ -1,24 +1,21 @@
 'use client'
 
 import { useState } from 'react'
-import { loginViewer } from '@/app/actions/auth'
+import { verifyPasscode, setSessionAuthorized } from '@/lib/storage'
 import { motion } from 'framer-motion'
 import { Lock } from 'lucide-react'
 
-export default function PasscodeForm() {
+export default function PasscodeForm({ onUnlock }: { onUnlock: () => void }) {
+  const [passcode, setPasscode] = useState('')
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setLoading(true)
-    setError('')
-    const formData = new FormData(e.currentTarget)
-    try {
-      await loginViewer(formData)
-    } catch (err: any) {
-      setError('Incorrect passcode.')
-      setLoading(false)
+    if (verifyPasscode('viewer', passcode)) {
+      setSessionAuthorized('viewer', true)
+      onUnlock()
+    } else {
+      setError('Incorrect passcode. Please try again.')
     }
   }
 
@@ -37,7 +34,11 @@ export default function PasscodeForm() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="password"
-          name="password"
+          value={passcode}
+          onChange={(e) => {
+            setPasscode(e.target.value)
+            setError('')
+          }}
           placeholder="Passcode"
           className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-200 transition-shadow text-center tracking-widest"
           required
@@ -45,10 +46,9 @@ export default function PasscodeForm() {
         {error && <p className="text-red-500 text-sm">{error}</p>}
         <button
           type="submit"
-          disabled={loading}
-          className="w-full bg-gray-900 text-white font-medium py-3 rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-70"
+          className="w-full bg-gray-900 text-white font-medium py-3 rounded-xl hover:bg-gray-800 transition-colors"
         >
-          {loading ? 'Unlocking...' : 'Unlock'}
+          Unlock
         </button>
       </form>
     </motion.div>

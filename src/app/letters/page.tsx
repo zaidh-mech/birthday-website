@@ -1,12 +1,18 @@
-import { prisma } from '@/lib/prisma'
+'use client'
+
+import { useEffect, useState } from 'react'
 import LettersClient from './LettersClient'
+import { getLetters } from '@/lib/storage'
+import { Letter } from '@/data/initialData'
 
-export const dynamic = 'force-dynamic'
+export default function LettersPage() {
+  const [letters, setLetters] = useState<Letter[]>([])
+  const [loaded, setLoaded] = useState(false)
 
-export default async function LettersPage() {
-  const letters = await prisma.letter.findMany({
-    orderBy: { date: 'desc' }
-  })
+  useEffect(() => {
+    setLetters(getLetters())
+    setLoaded(true)
+  }, [])
 
   return (
     <main className="flex-1 max-w-4xl w-full mx-auto p-6 pt-32 pb-24">
@@ -15,7 +21,7 @@ export default async function LettersPage() {
         <p className="font-sans text-gray-500 font-light">Words I wrote when I was thinking of you.</p>
       </div>
       
-      <LettersClient letters={letters} />
+      {loaded && <LettersClient letters={letters} />}
     </main>
   )
 }

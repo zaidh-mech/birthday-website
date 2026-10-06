@@ -1,48 +1,118 @@
-import { checkAdmin } from '@/lib/auth'
+'use client'
+
+import { useEffect, useState } from 'react'
 import AdminLogin from './AdminLogin'
 import Link from 'next/link'
-import { logout } from '@/app/actions/auth'
+import { usePathname } from 'next/navigation'
+import { isSessionAuthorized, setSessionAuthorized, exportAllData } from '@/lib/storage'
+import { Download, LogOut, BookOpen, Image as ImageIcon, ArrowLeft } from 'lucide-react'
 
-export const dynamic = 'force-dynamic'
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const [authorized, setAuthorized] = useState<boolean | null>(null)
+  const pathname = usePathname()
 
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const isAuthorized = await checkAdmin()
+  useEffect(() => {
+    setAuthorized(isSessionAuthorized('admin'))
+  }, [])
 
-  if (!isAuthorized) {
+  const handleLoginSuccess = () => {
+    setAuthorized(true)
+  }
+
+  const handleLogout = () => {
+    setSessionAuthorized('admin', false)
+    setAuthorized(false)
+  }
+
+  const handleExportBackup = () => {
+    const json = exportAllData()
+    const blob = new Blob([json], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `birthday-website-backup-${new Date().toISOString().split('T')[0]}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
+  if (authorized === null) {
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center" />
+  }
+
+  if (!authorized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
-        <AdminLogin />
+        <AdminLogin onLoginSuccess={handleLoginSuccess} />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-gray-200 p-6 flex flex-col">
-        <div className="font-serif text-2xl font-bold mb-10 text-gray-900">Admin Panel</div>
-        
-        <nav className="space-y-2 flex-1">
-          <Link href="/admin/letters" className="block px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900">
-            Manage Letters
-          </Link>
-          <Link href="/admin/memories" className="block px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900">
-            Manage Memories
-          </Link>
-          <a href="/" className="block px-4 py-2 rounded-lg text-gray-400 hover:text-gray-600 mt-8 border-t border-gray-100 pt-4">
-            ← Back to Site
-          </a>
-        </nav>
+      <aside className="w-full md:w-64 bg-white border-b md:border-b-0 md:border-r border-gray-200 p-6 flex flex-col justify-between">
+        <div>
+          <div className="font-serif text-2xl font-bold mb-8 text-gray-900 flex items-center gap-2">
+            <span>✦</span> Admin Studio
+          </div>
+          
+          <nav className="space-y-1">
+            <Link 
+              href="/admin/letters" 
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                pathname === '/admin/letters' || pathname === '/admin' 
+                  ? 'bg-rose-50 text-rose-700 font-semibold' 
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <BookOpen className="w-4 h-4" />
+              Manage Letters
+            </Link>
+            <Link 
+              href="/admin/memories" 
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                pathname === '/admin/memories' 
+                  ? 'bg-rose-50 text-rose-700 font-semibold' 
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <ImageIcon className="w-4 h-4" />
+              Manage Memories
+            </Link>
+            
+            <button
+              onClick={handleExportBackup}
+              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 text-left transition-colors"
+            >
+              <Download className="w-4 h-4 text-emerald-600" />
+              Export Backup JSON
+            </button>
+          </nav>
+        </div>
 
-        <form action={logout}>
-          <button className="w-full text-left px-4 py-2 text-red-500 hover:bg-red-50 rounded-lg">
+        <div className="pt-6 border-t border-gray-100 space-y-2 mt-6">
+          <Link 
+            href="/" 
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-500 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Site
+          </Link>
+          
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors text-left"
+          >
+            <LogOut className="w-4 h-4" />
             Logout
           </button>
-        </form>
+        </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-10 overflow-y-auto">
+      <main className="flex-1 p-6 md:p-10 overflow-y-auto">
         {children}
       </main>
     </div>

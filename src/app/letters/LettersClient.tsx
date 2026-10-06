@@ -5,13 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { format } from 'date-fns'
 import { X } from 'lucide-react'
 
-type Letter = {
-  id: string
-  title: string
-  content: string
-  occasion: string
-  date: Date
-}
+import { Letter } from '@/data/initialData'
 
 export default function LettersClient({ letters }: { letters: Letter[] }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)

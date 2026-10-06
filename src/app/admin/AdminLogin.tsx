@@ -1,45 +1,51 @@
 'use client'
 
 import { useState } from 'react'
-import { loginAdmin } from '@/app/actions/auth'
+import { verifyPasscode, setSessionAuthorized } from '@/lib/storage'
+import { Lock } from 'lucide-react'
 
-export default function AdminLogin() {
+export default function AdminLogin({ onLoginSuccess }: { onLoginSuccess: () => void }) {
+  const [passcode, setPasscode] = useState('')
   const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setLoading(true)
-    setError('')
-    const formData = new FormData(e.currentTarget)
-    try {
-      await loginAdmin(formData)
-    } catch (err: any) {
-      setError('Invalid admin password')
-      setLoading(false)
+    if (verifyPasscode('admin', passcode)) {
+      setSessionAuthorized('admin', true)
+      onLoginSuccess()
+    } else {
+      setError('Invalid admin passcode.')
     }
   }
 
   return (
-    <div className="w-full max-w-sm bg-white p-8 rounded-2xl shadow-xl">
-      <h1 className="text-2xl font-bold mb-6 text-center text-gray-900">Admin Login</h1>
+    <div className="w-full max-w-sm bg-white p-8 rounded-3xl shadow-sm border border-gray-100 text-center">
+      <div className="w-12 h-12 bg-rose-50 rounded-full flex items-center justify-center mx-auto mb-6">
+        <Lock className="w-5 h-5 text-rose-400" />
+      </div>
+      <h1 className="text-2xl font-serif font-bold mb-2 text-gray-900">Admin Studio</h1>
+      <p className="text-sm text-gray-500 mb-6 font-light">Enter passcode to manage letters & memories.</p>
+      
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <input
             type="password"
-            name="password"
-            placeholder="Admin Password"
-            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+            value={passcode}
+            onChange={(e) => {
+              setPasscode(e.target.value)
+              setError('')
+            }}
+            placeholder="Admin Passcode"
+            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-rose-200 outline-none text-center tracking-widest text-sm"
             required
           />
         </div>
         {error && <p className="text-red-500 text-sm">{error}</p>}
         <button
           type="submit"
-          disabled={loading}
-          className="w-full bg-gray-900 text-white font-medium py-2 rounded-lg hover:bg-gray-800 disabled:opacity-50"
+          className="w-full bg-gray-900 text-white font-medium py-3 rounded-xl hover:bg-gray-800 transition-colors text-sm"
         >
-          {loading ? 'Logging in...' : 'Login'}
+          Sign In
         </button>
       </form>
     </div>

@@ -6,13 +6,7 @@ import Image from 'next/image'
 import { format } from 'date-fns'
 import { X } from 'lucide-react'
 
-type Memory = {
-  id: string
-  title: string
-  imagePath: string
-  caption: string
-  date: Date
-}
+import { Memory } from '@/data/initialData'
 
 export default function MemoriesGallery({ memories }: { memories: Memory[] }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
