@@ -1,6 +1,6 @@
 import MemoriesContainer from './MemoriesContainer'
 
-export const dynamic = 'force-dynamic'
+
 
 export default function MemoriesPage() {
   return (

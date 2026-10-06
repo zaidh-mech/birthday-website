@@ -1,18 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getMemoriesWithPasscode } from '@/app/actions/memoriesAuth'
+import { fetchMemories, verifyPasscode } from '@/lib/storage'
 import MemoriesGallery from './MemoriesGallery'
 import { motion } from 'framer-motion'
 import { Lock } from 'lucide-react'
-
-type Memory = {
-  id: string
-  title: string
-  imagePath: string
-  caption: string
-  date: Date
-}
+import { Memory } from '@/data/initialData'
 
 export default function MemoriesContainer() {
   const [memories, setMemories] = useState<Memory[] | null>(null)
@@ -33,9 +26,9 @@ export default function MemoriesContainer() {
     const passcode = formData.get('password') as string
     
     try {
-      const res = await getMemoriesWithPasscode(passcode)
-      if (res.success && res.memories) {
-        setMemories(res.memories)
+      if (verifyPasscode('viewer', passcode)) {
+        const data = await fetchMemories()
+        setMemories(data)
       } else {
         setError('Incorrect passcode.')
       }
