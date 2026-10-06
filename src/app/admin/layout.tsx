@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { isSessionAuthorized, setSessionAuthorized, exportAllData } from '@/lib/storage'
 import { getSupabaseCredentials, saveSupabaseCredentials, getSupabaseClient } from '@/lib/supabase'
-import { Download, LogOut, BookOpen, Image as ImageIcon, ArrowLeft, Database, X, Check, Copy } from 'lucide-react'
+import { Download, LogOut, BookOpen, Image as ImageIcon, ArrowLeft, Database, X, Check, Copy, Gift } from 'lucide-react'
 
 const SUPABASE_SETUP_SQL = `-- Run this in Supabase SQL Editor:
 create table if not exists letters (
@@ -135,6 +135,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             >
               <ImageIcon className="w-4 h-4" />
               Manage Memories
+            </Link>
+            <Link 
+              href="/admin/gift" 
+              className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                pathname === '/admin/gift' 
+                  ? 'bg-rose-50 text-rose-700 font-semibold' 
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <Gift className="w-4 h-4" />
+              Gift Settings
             </Link>
             
             <button

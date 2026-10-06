@@ -44,7 +44,7 @@ export default function AdminMemoriesPage() {
           <ImageIcon className="w-5 h-5 text-rose-500" /> Saved Memories ({memories.length})
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-          {memories.map((memory) => (
+          {memories.filter(m => m.title !== '[GIFT_PHOTO]').map((memory) => (
             <div key={memory.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
               <div>
                 <div className="relative w-full h-44 mb-3 rounded-xl overflow-hidden bg-gray-100">

@@ -10,12 +10,13 @@ import { Memory } from '@/data/initialData'
 
 export default function MemoriesGallery({ memories }: { memories: Memory[] }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const selectedMemory = memories.find(m => m.id === selectedId)
+  const visibleMemories = memories.filter(m => m.title !== '[GIFT_PHOTO]')
+  const selectedMemory = visibleMemories.find(m => m.id === selectedId)
 
   return (
     <>
       <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
-        {memories.map((memory) => (
+        {visibleMemories.map((memory) => (
           <motion.div
             layoutId={`memory-${memory.id}`}
             key={memory.id}

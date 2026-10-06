@@ -44,9 +44,18 @@ export default function Home() {
           A tiny universe holding my letters to you, our memories, and all the quiet moments we share. Just for you.
         </motion.p>
 
+        <motion.div variants={itemVars} className="pt-6">
+          <a 
+            href="/gift"
+            className="inline-block px-10 py-5 bg-rose-400 text-white rounded-full font-medium hover:bg-rose-500 transition-all shadow-sm hover:shadow-md hover:-translate-y-1"
+          >
+            Explore your birthday gift
+          </a>
+        </motion.div>
+
         <motion.div 
           variants={itemVars}
-          className="pt-12 text-xs text-gray-400 uppercase tracking-[0.3em] flex items-center justify-center gap-4"
+          className="pt-8 text-xs text-gray-400 uppercase tracking-[0.3em] flex items-center justify-center gap-4"
         >
           <span className="w-12 h-px bg-gray-200" />
           Explore the chapters above
