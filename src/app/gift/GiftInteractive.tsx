@@ -49,25 +49,36 @@ export default function GiftInteractive() {
     if (!ticketRef.current || isDownloading) return
     setIsDownloading(true)
     try {
-      // Small delay to let any button click effects clear
-      await new Promise(r => setTimeout(r, 100))
-
+      // Small delay
+      await new Promise(r => setTimeout(r, 150))
+      
       const canvas = await html2canvas(ticketRef.current, { 
         backgroundColor: null, 
-        scale: 3,
-        useCORS: true
+        scale: 2,
+        useCORS: true,
+        logging: false
       })
-      const imgData = canvas.toDataURL('image/png')
+      
+      const imgData = canvas.toDataURL('image/png', 1.0)
+      
       const pdf = new jsPDF({
         orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
-        unit: 'px',
-        format: [canvas.width, canvas.height]
+        unit: 'mm',
+        format: 'a4'
       })
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height)
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width
+      
+      const xOffset = 0
+      const yOffset = 10 // slightly down from top
+      
+      pdf.addImage(imgData, 'PNG', xOffset, yOffset, pdfWidth, pdfHeight)
       pdf.save('5-Year-Anniversary-Ticket.pdf')
-    } catch (e) {
+      
+    } catch (e: any) {
       console.error("PDF generation failed", e)
-      alert("Failed to generate PDF. Please try again.")
+      alert("Failed to generate PDF. Error: " + (e?.message || String(e)))
     } finally {
       setIsDownloading(false)
     }
