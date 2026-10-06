@@ -382,6 +382,7 @@ export default function GiftInteractive() {
         <AnimatePresence>
           {expandedPlaceId && expandedPlace && (
             <motion.div
+              key="expanded-modal"
               layoutId={`card-${expandedPlace.id}`}
               className={`relative w-full max-w-3xl rounded-[2rem] overflow-hidden shadow-2xl flex flex-col md:flex-row z-10 pointer-events-auto ${expandedPlace.themeClass}`}
             >
