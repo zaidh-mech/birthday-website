@@ -363,20 +363,27 @@ export default function GiftInteractive() {
         </AnimatePresence>
       </div>
 
-      {/* Expanded Place Modal */}
+      {/* Expanded Place Modal Backdrop */}
       <AnimatePresence>
-        {expandedPlaceId && expandedPlace && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setExpandedPlaceId(null)}
-              className="absolute inset-0 bg-gray-900/60 backdrop-blur-md"
-            />
+        {expandedPlaceId && (
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setExpandedPlaceId(null)}
+            className="fixed inset-0 z-40 bg-gray-900/60 backdrop-blur-md"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Expanded Place Modal Content */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 pointer-events-none">
+        <AnimatePresence>
+          {expandedPlaceId && expandedPlace && (
             <motion.div
               layoutId={`card-${expandedPlace.id}`}
-              className={`relative w-full max-w-3xl rounded-[2rem] overflow-hidden shadow-2xl flex flex-col md:flex-row z-10 ${expandedPlace.themeClass}`}
+              className={`relative w-full max-w-3xl rounded-[2rem] overflow-hidden shadow-2xl flex flex-col md:flex-row z-10 pointer-events-auto ${expandedPlace.themeClass}`}
             >
               <button 
                 onClick={() => setExpandedPlaceId(null)}
@@ -442,9 +449,9 @@ export default function GiftInteractive() {
                 </button>
               </div>
             </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   )
 }
