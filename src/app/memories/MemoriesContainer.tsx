@@ -111,7 +111,7 @@ export default function MemoriesContainer() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-2xl bg-[#FDFBF7] dark:bg-[#111218] p-8 md:p-12 rounded-[2rem] shadow-lg shadow-rose-900/5 dark:shadow-none border border-rose-100 dark:border-white/10 text-center mx-6 relative overflow-hidden transition-colors duration-1000"
+        className="w-full max-w-2xl bg-[#FDFBF7] dark:bg-[#111218] p-6 sm:p-8 md:p-12 rounded-[2rem] shadow-lg shadow-rose-900/5 dark:shadow-none border border-rose-100 dark:border-white/10 text-center mx-4 sm:mx-6 relative overflow-hidden transition-colors duration-1000"
       >
       {/* Decorative corner accents */}
       <div className="absolute top-0 left-0 w-24 h-24 bg-rose-100 dark:bg-white/5 rounded-br-[100px] opacity-50 transition-colors" />

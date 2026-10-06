@@ -23,7 +23,7 @@ export default function Navigation() {
           <Link
             key={link.href}
             href={link.href}
-            className="relative px-6 py-2.5 text-sm font-medium tracking-wide uppercase transition-colors"
+            className="relative px-3 sm:px-6 py-2.5 text-xs sm:text-sm font-medium tracking-wide uppercase transition-colors"
           >
             <span className={clsx("relative z-10 transition-colors duration-1000", pathname === link.href ? "text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200")}>
               {link.label}

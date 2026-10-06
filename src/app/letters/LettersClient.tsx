@@ -34,7 +34,7 @@ export default function LettersClient({ letters }: { letters: Letter[] }) {
                 zIndex: 100 
               }}
               style={{ zIndex }}
-              className="w-full max-w-lg bg-[#fffcf9] dark:bg-[#111218] p-8 md:p-10 rounded-2xl shadow-lg border border-[#f5e6db] dark:border-white/10 cursor-pointer relative group transition-colors duration-1000"
+              className="w-full max-w-lg bg-[#fffcf9] dark:bg-[#111218] p-6 sm:p-8 md:p-10 rounded-2xl shadow-lg border border-[#f5e6db] dark:border-white/10 cursor-pointer relative group transition-colors duration-1000"
             >
               <div className="absolute top-6 right-6 w-12 h-12 rounded-full border border-dashed border-rose-200 dark:border-white/20 flex items-center justify-center text-rose-200 dark:text-purple-300 bg-rose-50/50 dark:bg-white/5 group-hover:bg-rose-100 dark:group-hover:bg-white/10 transition-colors">
                 <span className="text-xl">💌</span>
@@ -75,12 +75,12 @@ export default function LettersClient({ letters }: { letters: Letter[] }) {
             >
               <button 
                 onClick={() => setSelectedId(null)}
-                className="absolute top-6 right-6 p-2 bg-white/50 dark:bg-white/10 hover:bg-gray-100 dark:hover:bg-white/20 rounded-full transition-colors z-10"
+                className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 bg-white/50 dark:bg-white/10 hover:bg-gray-100 dark:hover:bg-white/20 rounded-full transition-colors z-10"
               >
                 <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
               </button>
               
-              <div className="p-8 sm:p-12 overflow-y-auto custom-scrollbar">
+              <div className="p-6 sm:p-10 md:p-12 overflow-y-auto custom-scrollbar">
                 <motion.div layoutId={`occasion-${selectedLetter.id}`} className="text-sm font-semibold uppercase tracking-wider text-rose-400 dark:text-purple-300 mb-3">
                   {selectedLetter.occasion}
                 </motion.div>
