@@ -20,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${playfair.variable} ${dancingScript.variable} antialiased min-h-screen flex flex-col`}>
+      <body className={`${inter.variable} ${playfair.variable} ${dancingScript.variable} antialiased min-h-screen flex flex-col overflow-y-scroll`}>
         <Background />
         <Navigation />
         {children}
