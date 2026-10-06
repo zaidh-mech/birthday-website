@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Memory } from '@/data/initialData'
 import { fetchMemories } from '@/lib/storage'
-import { Check } from 'lucide-react'
+import { Check, X, MapPin, Clock, CalendarDays, Wallet, Info } from 'lucide-react'
 
 export default function GiftInteractive() {
   const [step, setStep] = useState(0)
@@ -12,6 +12,9 @@ export default function GiftInteractive() {
   const [color, setColor] = useState('')
   const [place, setPlace] = useState('')
   const [cuteFellaPhoto, setCuteFellaPhoto] = useState<string | null>(null)
+  
+  // State for expanded place modal
+  const [expandedPlaceId, setExpandedPlaceId] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadPhoto() {
@@ -25,7 +28,6 @@ export default function GiftInteractive() {
   }, [])
 
   const nextStep = () => setStep(s => s + 1)
-
   const handleYes = () => setStep(3)
   const handleNo1 = () => setStep(1)
   const handleNo2 = () => setStep(2)
@@ -42,50 +44,82 @@ export default function GiftInteractive() {
   const places = [
     {
       id: 'churros',
-      name: 'The Churros - Kingsbury',
+      name: 'The Churros',
+      subtitle: 'The Kingsbury Hotel',
       time: '3:00 PM - 6:00 PM',
       days: 'Mon-Thu (Platter), Fri-Sun (Buffet)',
       price: 'LKR 3,800 - 5,500',
-      desc: 'Elegant luxury pâtisserie high tea at a premium hotel.',
-      type: 'High Tea'
+      desc: 'Elegant luxury pâtisserie high tea.',
+      ambiance: 'Opulent, luxurious, and grand. Gold accents and plush seating make it perfect for a premium celebration.',
+      type: 'High Tea',
+      image: 'https://images.unsplash.com/photo-1495147466023-ac5c588e2e94?q=80&w=800',
+      themeClass: 'bg-[#2A1C14] text-[#F3E5D8]',
+      accentClass: 'bg-[#4A3222] text-[#F3E5D8] border-[#8C6D53]',
+      buttonClass: 'bg-[#8C6D53] hover:bg-[#A68365] text-white',
     },
     {
       id: 'mandarina',
       name: 'Mandarina Colombo',
+      subtitle: 'Hotel High Tea',
       time: '3:30 PM - 5:30 PM',
       days: 'Fri-Sun',
       price: 'LKR 3,500 nett',
       desc: 'Classic hotel high tea with a popular weekend buffet.',
-      type: 'Buffet'
+      ambiance: 'Breezy, modern, and comfortable. A relaxing atmosphere with a fantastic view of the city skyline.',
+      type: 'Buffet',
+      image: 'https://images.unsplash.com/photo-1558326567-98ae2405596b?q=80&w=800',
+      themeClass: 'bg-[#0F172A] text-[#F1F5F9]',
+      accentClass: 'bg-[#1E293B] text-[#E2E8F0] border-[#3B82F6]',
+      buttonClass: 'bg-[#3B82F6] hover:bg-[#60A5FA] text-white',
     },
     {
       id: 'beira',
       name: 'Beira Kitchen',
+      subtitle: 'Courtyard by Marriott',
       time: '3:30 PM - 5:30 PM',
       days: 'Daily',
       price: 'LKR 4,300 - 4,500 nett',
       desc: 'Vibrant tea time affair with live action stations & gelato.',
-      type: 'Buffet'
+      ambiance: 'Energetic, contemporary, and incredibly fun. Features live cooking stations and an endless gelato bar!',
+      type: 'Buffet',
+      image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=800',
+      themeClass: 'bg-[#431407] text-[#FFEDD5]',
+      accentClass: 'bg-[#7C2D12] text-[#FFEDD5] border-[#F97316]',
+      buttonClass: 'bg-[#EA580C] hover:bg-[#F97316] text-white',
     },
     {
       id: 'thegrind',
-      name: 'The Grind Coffeehouse',
+      name: 'The Grind',
+      subtitle: 'Coffeehouse',
       time: '8:00 AM - 10:00 PM',
       days: 'Daily',
       price: 'A la carte',
       desc: 'Aesthetic, upscale vibe with specialty coffee & bagels.',
-      type: 'Brunch/Cafe'
+      ambiance: 'Minimalist, earthy, and Pinterest-perfect. The ultimate cozy brunch spot with incredible lighting and artisan bagels.',
+      type: 'Brunch/Cafe',
+      image: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=800',
+      themeClass: 'bg-[#FDF8F5] text-[#4A3F35]',
+      accentClass: 'bg-[#F2E8E0] text-[#5C4F43] border-[#D1BFAe]',
+      buttonClass: 'bg-[#8E7C68] hover:bg-[#A3917C] text-white',
     },
     {
       id: 'radicle',
       name: 'Radicle Cafe',
+      subtitle: 'Colombo Fort',
       time: 'Closes at 6:00 PM',
       days: 'Daily',
       price: 'A la carte',
       desc: 'Tranquil oasis inside a 100+ year-old colonial building.',
-      type: 'Specialty Cafe'
+      ambiance: 'Historic, peaceful, and artistic. Located in an old colonial building housing an art gallery—perfect for quiet, intimate conversations.',
+      type: 'Specialty Cafe',
+      image: 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=800',
+      themeClass: 'bg-[#1C2C24] text-[#E8EFE9]',
+      accentClass: 'bg-[#283D33] text-[#D1DDD5] border-[#557A66]',
+      buttonClass: 'bg-[#436452] hover:bg-[#557A66] text-white',
     }
   ]
+
+  const expandedPlace = places.find(p => p.id === expandedPlaceId)
 
   const variants: any = {
     initial: { opacity: 0, scale: 0.95, y: 10 },
@@ -95,7 +129,7 @@ export default function GiftInteractive() {
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 min-h-[80vh] w-full">
-      <div className="w-full max-w-2xl mx-auto relative min-h-[500px] flex items-center justify-center">
+      <div className="w-full max-w-4xl mx-auto relative min-h-[500px] flex items-center justify-center">
         <AnimatePresence mode="wait">
           
           {step === 0 && (
@@ -155,7 +189,7 @@ export default function GiftInteractive() {
           )}
 
           {step === 3 && (
-            <motion.div key="step3" variants={variants} initial="initial" animate="animate" exit="exit" className="text-center space-y-8 w-full px-4 bg-white/60 backdrop-blur-md p-8 rounded-3xl border border-rose-100 shadow-sm">
+            <motion.div key="step3" variants={variants} initial="initial" animate="animate" exit="exit" className="text-center space-y-8 w-full px-4 bg-white/60 backdrop-blur-md p-8 rounded-3xl border border-rose-100 shadow-sm max-w-2xl mx-auto">
               <h2 className="font-serif text-3xl font-bold text-gray-900">
                 Give me a date that you want to enjoy your day with me!
               </h2>
@@ -216,51 +250,49 @@ export default function GiftInteractive() {
           )}
 
           {step === 5 && (
-            <motion.div key="step5" variants={variants} initial="initial" animate="animate" exit="exit" className="text-center space-y-6 w-full px-4 flex flex-col justify-center">
-              <div className="flex-shrink-0">
-                <h2 className="font-serif text-3xl font-bold text-gray-900 mb-2">
+            <motion.div key="step5" variants={variants} initial="initial" animate="animate" exit="exit" className="w-full">
+              <div className="text-center mb-10 px-4">
+                <h2 className="font-serif text-3xl md:text-5xl font-bold text-gray-900 mb-4">
                   Where should I take you?
                 </h2>
-                <p className="text-gray-600 font-medium mb-6">
-                  Select your favorite vibe from the options below!
+                <p className="text-gray-600 font-medium max-w-lg mx-auto">
+                  I've picked out a few perfect spots for us. Tap on any card to explore the vibe, check the ambiance, and select your favorite!
                 </p>
               </div>
 
-              <div className="overflow-y-auto custom-scrollbar pr-2 space-y-4 text-left pb-10 flex-1">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4">
                 {places.map(p => (
-                  <div 
+                  <motion.div 
                     key={p.id}
-                    onClick={() => setPlace(p.name)}
-                    className={`p-5 rounded-2xl border-2 cursor-pointer transition-all ${
-                      place === p.name ? 'border-rose-400 bg-rose-50/50 shadow-md scale-[1.02]' : 'border-gray-100 bg-white hover:border-rose-200 hover:shadow-sm'
-                    }`}
+                    layoutId={`card-${p.id}`}
+                    onClick={() => setExpandedPlaceId(p.id)}
+                    className="group relative h-80 rounded-3xl overflow-hidden cursor-pointer shadow-sm hover:shadow-xl transition-all"
                   >
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2">
-                        {p.name}
-                        {place === p.name && <Check className="w-5 h-5 text-rose-500" />}
-                      </h3>
-                      <span className="text-xs font-semibold px-2.5 py-1 bg-gray-100 rounded-full text-gray-600">
-                        {p.type}
-                      </span>
+                    <img src={p.image} alt={p.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+                    
+                    {place === p.name && (
+                      <div className="absolute top-4 right-4 bg-rose-500 text-white p-2 rounded-full shadow-lg">
+                        <Check className="w-5 h-5" />
+                      </div>
+                    )}
+
+                    <div className="absolute bottom-0 left-0 w-full p-6 text-white">
+                      <span className="text-xs font-bold tracking-wider uppercase mb-2 block text-white/80">{p.type}</span>
+                      <h3 className="font-serif text-2xl font-bold mb-1">{p.name}</h3>
+                      <p className="text-sm text-white/90 font-light line-clamp-2">{p.desc}</p>
                     </div>
-                    <p className="text-sm text-gray-500 mb-3">{p.desc}</p>
-                    <div className="grid grid-cols-2 gap-2 text-xs text-gray-600 bg-gray-50 p-3 rounded-xl">
-                      <div><span className="font-medium text-gray-900">Days:</span> {p.days}</div>
-                      <div><span className="font-medium text-gray-900">Time:</span> {p.time}</div>
-                      <div className="col-span-2"><span className="font-medium text-gray-900">Price:</span> {p.price}</div>
-                    </div>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
 
-              <div className="pt-4 flex-shrink-0 bg-gradient-to-t from-gray-50 to-transparent pb-4">
+              <div className="mt-12 text-center px-4">
                 <button 
                   disabled={!place}
                   onClick={nextStep} 
-                  className="px-10 py-4 bg-gray-900 text-white rounded-full font-medium hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md w-full sm:w-auto"
+                  className="px-12 py-5 bg-gray-900 text-white rounded-full font-bold text-lg hover:bg-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-xl w-full sm:w-auto"
                 >
-                  Lock it in!
+                  {place ? `Lock in ${place}!` : 'Select a place above'}
                 </button>
               </div>
             </motion.div>
@@ -269,22 +301,105 @@ export default function GiftInteractive() {
           {step === 6 && (
             <motion.div key="step6" variants={variants} initial="initial" animate="animate" exit="exit" className="text-center space-y-6 w-full px-4">
               <div className="text-6xl animate-bounce mb-4">🎉</div>
-              <h2 className="font-serif text-4xl font-bold text-gray-900">
-                Perfect!
+              <h2 className="font-serif text-4xl md:text-5xl font-bold text-gray-900">
+                It's a Date!
               </h2>
-              <div className="text-gray-600 text-lg space-y-2 bg-white/60 p-6 rounded-2xl border border-rose-100 inline-block text-left">
-                <p><strong>Date:</strong> {date}</p>
-                <p><strong>Secret Color:</strong> {color}</p>
-                <p><strong>Location:</strong> {place}</p>
+              <div className="text-gray-600 text-lg space-y-3 bg-white/60 p-8 rounded-3xl border border-rose-100 inline-block text-left shadow-sm mt-8">
+                <p className="flex items-center gap-3"><CalendarDays className="w-5 h-5 text-rose-400" /> <strong className="text-gray-900">Date:</strong> {date}</p>
+                <p className="flex items-center gap-3"><MapPin className="w-5 h-5 text-rose-400" /> <strong className="text-gray-900">Location:</strong> {place}</p>
+                <p className="flex items-center gap-3"><Info className="w-5 h-5 text-rose-400" /> <strong className="text-gray-900">Secret Theme:</strong> {color}</p>
               </div>
-              <p className="text-rose-500 font-medium text-xl mt-6">
-                I've locked in the details. I can't wait to spend the day with you! ❤️
+              <p className="text-rose-500 font-medium text-xl mt-8 max-w-md mx-auto leading-relaxed">
+                I've locked in the details. I can't wait to spend the day with you and make you feel as special as you are! ❤️
               </p>
             </motion.div>
           )}
 
         </AnimatePresence>
       </div>
+
+      {/* Expanded Place Modal */}
+      <AnimatePresence>
+        {expandedPlaceId && expandedPlace && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setExpandedPlaceId(null)}
+              className="absolute inset-0 bg-gray-900/60 backdrop-blur-md"
+            />
+            <motion.div
+              layoutId={`card-${expandedPlace.id}`}
+              className={`relative w-full max-w-3xl rounded-[2rem] overflow-hidden shadow-2xl flex flex-col md:flex-row z-10 ${expandedPlace.themeClass}`}
+            >
+              <button 
+                onClick={() => setExpandedPlaceId(null)}
+                className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full z-20 transition-colors backdrop-blur-sm"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              
+              <div className="w-full md:w-1/2 h-64 md:h-auto relative">
+                 <img 
+                   src={expandedPlace.image} 
+                   alt={expandedPlace.name}
+                   className="absolute inset-0 w-full h-full object-cover"
+                 />
+              </div>
+
+              <div className="w-full md:w-1/2 p-8 md:p-10 flex flex-col justify-between">
+                <div>
+                  <span className="text-xs font-bold tracking-[0.2em] uppercase mb-2 block opacity-70">
+                    {expandedPlace.type}
+                  </span>
+                  <h2 className="font-serif text-3xl md:text-4xl font-bold mb-1">
+                    {expandedPlace.name}
+                  </h2>
+                  <p className="text-sm font-medium opacity-80 mb-6">
+                    {expandedPlace.subtitle}
+                  </p>
+
+                  <div className="space-y-4 mb-8">
+                    <p className="text-base leading-relaxed italic opacity-90">
+                      "{expandedPlace.ambiance}"
+                    </p>
+                    
+                    <div className={`p-4 rounded-2xl border space-y-3 ${expandedPlace.accentClass}`}>
+                      <div className="flex items-center gap-3 text-sm">
+                        <CalendarDays className="w-4 h-4 opacity-70" />
+                        <span>{expandedPlace.days}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm">
+                        <Clock className="w-4 h-4 opacity-70" />
+                        <span>{expandedPlace.time}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm">
+                        <Wallet className="w-4 h-4 opacity-70" />
+                        <span>{expandedPlace.price}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => {
+                    setPlace(expandedPlace.name)
+                    setExpandedPlaceId(null)
+                  }}
+                  className={`w-full py-4 rounded-full font-bold text-lg shadow-md transition-all hover:scale-105 flex items-center justify-center gap-2 ${expandedPlace.buttonClass}`}
+                >
+                  {place === expandedPlace.name ? (
+                    <>Selected <Check className="w-5 h-5" /></>
+                  ) : (
+                    'Select this place'
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
