@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 
 export function getSupabaseCredentials() {
   const envUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const envKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const envKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (typeof window !== 'undefined') {
     const localUrl = localStorage.getItem('birthday_supabase_url')
