@@ -308,6 +308,7 @@ export default function GiftInteractive() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4">
                 {places.map(p => (
                   <motion.div 
+                    layout
                     key={p.id}
                     layoutId={`card-${p.id}`}
                     onClick={() => setActivePlace(p)}
@@ -382,8 +383,12 @@ export default function GiftInteractive() {
         <AnimatePresence>
           {activePlace && (
             <motion.div
+              layout
               key={`modal-${activePlace.id}`}
               layoutId={`card-${activePlace.id}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, transition: { duration: 0.3 } }}
               className={`relative w-full max-w-3xl rounded-[2rem] overflow-hidden shadow-2xl flex flex-col md:flex-row z-10 pointer-events-auto ${activePlace.themeClass}`}
             >
               <button 
