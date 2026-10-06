@@ -32,23 +32,37 @@ export default function Background() {
     <div className="fixed inset-0 overflow-hidden pointer-events-none -z-50 bg-[#fdfbf7]">
       {/* Decorative interactive glowing orbs (parallax background) */}
       <motion.div
-        style={{ x: inverseX, y: inverseY }}
-        className="absolute top-[20%] left-[20%] w-[50vw] h-[50vw] bg-rose-100/40 rounded-full blur-[100px] mix-blend-multiply hidden md:block"
+        style={{ 
+          x: inverseX, 
+          y: inverseY,
+          background: 'radial-gradient(circle, rgba(255, 228, 230, 0.6) 0%, transparent 70%)'
+        }}
+        className="absolute top-[10%] left-[10%] w-[60vw] h-[60vw] rounded-full hidden md:block"
       />
       <motion.div
-        style={{ x: useTransform(inverseX, v => -v), y: useTransform(inverseY, v => -v) }}
-        className="absolute bottom-[10%] right-[10%] w-[40vw] h-[40vw] bg-amber-100/40 rounded-full blur-[100px] mix-blend-multiply hidden md:block"
+        style={{ 
+          x: useTransform(inverseX, v => -v), 
+          y: useTransform(inverseY, v => -v),
+          background: 'radial-gradient(circle, rgba(254, 243, 199, 0.6) 0%, transparent 70%)'
+        }}
+        className="absolute bottom-[0%] right-[0%] w-[50vw] h-[50vw] rounded-full hidden md:block"
       />
       
       {/* The trailing color effect light (follows the exact cursor) */}
       <motion.div
-        style={{ x: glowX, y: glowY, translateX: '-50%', translateY: '-50%' }}
-        className="absolute top-0 left-0 w-[400px] h-[400px] bg-rose-200/30 rounded-full blur-[100px] mix-blend-multiply hidden md:block"
+        style={{ 
+          x: glowX, 
+          y: glowY, 
+          translateX: '-50%', 
+          translateY: '-50%',
+          background: 'radial-gradient(circle, rgba(254, 205, 211, 0.4) 0%, transparent 70%)'
+        }}
+        className="absolute top-0 left-0 w-[500px] h-[500px] rounded-full hidden md:block"
       />
 
       {/* Static noise/texture overlay for a premium feel */}
       <div 
-        className="absolute inset-0 opacity-[0.03] mix-blend-overlay"
+        className="absolute inset-0 opacity-[0.03] pointer-events-none"
         style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
       />
     </div>
