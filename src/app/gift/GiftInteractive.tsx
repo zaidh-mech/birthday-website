@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Memory } from '@/data/initialData'
 import { fetchMemories } from '@/lib/storage'
-import { Check, X, MapPin, Clock, CalendarDays, Wallet, Info } from 'lucide-react'
+import { Check, X, MapPin, Clock, CalendarDays, Wallet, Info, MessageCircle } from 'lucide-react'
 
 export default function GiftInteractive() {
   const [step, setStep] = useState(0)
@@ -15,6 +15,7 @@ export default function GiftInteractive() {
   
   // State for expanded place modal
   const [activePlace, setActivePlace] = useState<any | null>(null)
+  const [customMessage, setCustomMessage] = useState('')
 
   useEffect(() => {
     async function loadPhoto() {
@@ -31,6 +32,15 @@ export default function GiftInteractive() {
   const handleYes = () => setStep(3)
   const handleNo1 = () => setStep(1)
   const handleNo2 = () => setStep(2)
+
+  const handleWhatsAppSend = () => {
+    // Note to user: Replace this placeholder with your actual phone number (include country code, no + or spaces, e.g. 94771234567)
+    const phoneNumber = "YOUR_PHONE_NUMBER_HERE" 
+    const baseText = `*5-Year Anniversary RSVP* 💌\n\nI've officially locked in our date!\n📍 *Location:* ${place}\n📅 *Date:* ${date}\n\n`
+    const finalMessage = customMessage.trim() ? `${baseText}*My message to you:* ${customMessage}` : baseText
+    const encodedMessage = encodeURIComponent(finalMessage)
+    window.open(`https://wa.me/${phoneNumber}?text=${encodedMessage}`, '_blank')
+  }
 
   const colors = [
     { name: 'Rose', class: 'bg-rose-400' },
@@ -360,9 +370,28 @@ export default function GiftInteractive() {
                 <p className="flex items-center gap-3"><MapPin className="w-5 h-5 text-rose-400" /> <strong className="text-gray-900 dark:text-gray-100">Location:</strong> {place}</p>
                 <p className="flex items-center gap-3"><Info className="w-5 h-5 text-rose-400" /> <strong className="text-gray-900 dark:text-gray-100">Secret Theme:</strong> {color}</p>
               </div>
-              <p className="text-rose-500 font-medium text-xl mt-8 max-w-md mx-auto leading-relaxed">
-                I've locked in the details. I can't wait to spend the day with you and make you feel as special as you are! ❤️
-              </p>
+              <div className="mt-8 bg-white/80 dark:bg-black/20 p-6 sm:p-8 rounded-[2rem] border border-rose-100 dark:border-white/10 shadow-lg shadow-rose-900/5 dark:shadow-none max-w-xl mx-auto backdrop-blur-sm relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-rose-300 via-rose-400 to-rose-300" />
+                <h3 className="font-serif text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                  One last thing...
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 text-sm mb-6">
+                  Write a cute little message to me below. It will be sent to my WhatsApp along with your RSVP so I know you've locked it in! 
+                </p>
+                <textarea 
+                  value={customMessage}
+                  onChange={(e) => setCustomMessage(e.target.value)}
+                  placeholder="I can't wait! ❤️"
+                  className="w-full p-4 rounded-xl border border-rose-100 dark:border-white/20 bg-white dark:bg-[#111218] focus:ring-2 focus:ring-rose-300 outline-none mb-6 min-h-[120px] text-gray-800 dark:text-gray-200 custom-scrollbar resize-none"
+                />
+                <button 
+                  onClick={handleWhatsAppSend}
+                  className="w-full py-4 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg transition-all hover:-translate-y-1"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                  Send RSVP to my WhatsApp
+                </button>
+              </div>
             </motion.div>
           )}
 
