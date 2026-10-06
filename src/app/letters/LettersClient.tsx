@@ -14,30 +14,46 @@ export default function LettersClient({ letters }: { letters: Letter[] }) {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {letters.map((letter) => (
-          <motion.div
-            layoutId={`card-${letter.id}`}
-            key={letter.id}
-            onClick={() => setSelectedId(letter.id)}
-            className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow group relative overflow-hidden"
-            whileHover={{ y: -4 }}
-          >
-            <div className="absolute top-0 right-0 w-24 h-24 bg-rose-50 rounded-bl-full -z-10 transition-transform group-hover:scale-110" />
-            
-            <motion.div layoutId={`occasion-${letter.id}`} className="text-xs font-semibold uppercase tracking-wider text-rose-400 mb-2">
-              {letter.occasion}
+      <div className="flex flex-col items-center -space-y-16 md:-space-y-24 pt-10 pb-32 px-4">
+        {letters.map((letter, i) => {
+          const rotation = (i % 2 === 0 ? 1 : -1) * ((i % 3) + 2)
+          const xOffset = (i % 2 === 0 ? 1 : -1) * ((i % 4) * 8)
+          const zIndex = letters.length - i
+
+          return (
+            <motion.div
+              layoutId={`card-${letter.id}`}
+              key={letter.id}
+              onClick={() => setSelectedId(letter.id)}
+              initial={{ rotate: rotation, x: xOffset }}
+              animate={{ rotate: rotation, x: xOffset }}
+              whileHover={{ 
+                scale: 1.05, 
+                rotate: 0, 
+                y: -30, 
+                zIndex: 100 
+              }}
+              style={{ zIndex }}
+              className="w-full max-w-lg bg-[#fffcf9] p-8 md:p-10 rounded-2xl shadow-lg border border-[#f5e6db] cursor-pointer relative group"
+            >
+              <div className="absolute top-6 right-6 w-12 h-12 rounded-full border border-dashed border-rose-200 flex items-center justify-center text-rose-200 bg-rose-50/50 group-hover:bg-rose-100 transition-colors">
+                <span className="text-xl">♡</span>
+              </div>
+              
+              <motion.div layoutId={`occasion-${letter.id}`} className="text-xs font-semibold uppercase tracking-widest text-rose-400 mb-3">
+                {letter.occasion}
+              </motion.div>
+              <motion.h2 layoutId={`title-${letter.id}`} className="font-serif text-2xl md:text-3xl font-bold text-gray-800 mb-6 w-5/6">
+                {letter.title}
+              </motion.h2>
+              <motion.p layoutId={`date-${letter.id}`} className="text-sm text-gray-400 font-light font-sans tracking-wide">
+                {format(new Date(letter.date), 'MMMM do, yyyy')}
+              </motion.p>
             </motion.div>
-            <motion.h2 layoutId={`title-${letter.id}`} className="font-serif text-xl font-bold text-gray-900 mb-4">
-              {letter.title}
-            </motion.h2>
-            <motion.p layoutId={`date-${letter.id}`} className="text-sm text-gray-400 font-light mt-auto pt-4 border-t border-gray-50">
-              {format(new Date(letter.date), 'MMMM do, yyyy')}
-            </motion.p>
-          </motion.div>
-        ))}
+          )
+        })}
         {letters.length === 0 && (
-          <div className="col-span-full text-center py-20 text-gray-400 font-light">
+          <div className="text-center py-20 text-gray-400 font-light">
             No letters yet. Someone needs to start writing!
           </div>
         )}
