@@ -1,12 +1,10 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { toPng } from 'html-to-image'
-import { jsPDF } from 'jspdf'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Memory } from '@/data/initialData'
 import { fetchMemories } from '@/lib/storage'
-import { Check, X, MapPin, Clock, CalendarDays, Wallet, Info, MessageCircle, Download, Loader2 } from 'lucide-react'
+import { Check, X, MapPin, Clock, CalendarDays, Wallet, Info, MessageCircle } from 'lucide-react'
 
 export default function GiftInteractive() {
   const [step, setStep] = useState(0)
@@ -18,10 +16,7 @@ export default function GiftInteractive() {
   // State for expanded place modal
   const [activePlace, setActivePlace] = useState<any | null>(null)
   const [customMessage, setCustomMessage] = useState('')
-  const [isDownloading, setIsDownloading] = useState(false)
-  const ticketRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
+      useEffect(() => {
     async function loadPhoto() {
       const memories = await fetchMemories()
       const giftPhoto = memories.find(m => m.title === '[GIFT_PHOTO]')
@@ -45,48 +40,7 @@ export default function GiftInteractive() {
     window.open(`https://wa.me/${phoneNumber}?text=${encodedMessage}`, '_blank')
   }
 
-  const handleDownloadPDF = async () => {
-    if (!ticketRef.current || isDownloading) return
-    setIsDownloading(true)
-    try {
-      // Small delay
-      await new Promise(r => setTimeout(r, 150))
-      
-      const el = ticketRef.current;
-      const imgData = await toPng(el, { 
-        pixelRatio: 2, 
-        cacheBust: true,
-        style: {
-          transform: 'scale(1)',
-          transformOrigin: 'top left'
-        }
-      });
-      
-      const width = el.offsetWidth;
-      const height = el.offsetHeight;
-      
-      const pdf = new jsPDF({
-        orientation: width > height ? 'landscape' : 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      })
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth()
-      const pdfHeight = (height * pdfWidth) / width
-      
-      const xOffset = 0
-      const yOffset = 10 // slightly down from top
-      
-      pdf.addImage(imgData, 'PNG', xOffset, yOffset, pdfWidth, pdfHeight)
-      pdf.save('5-Year-Anniversary-Ticket.pdf')
-      
-    } catch (e: any) {
-      console.error("PDF generation failed", e)
-      alert("Failed to generate PDF. Error: " + (e?.message || String(e)))
-    } finally {
-      setIsDownloading(false)
-    }
-  }
+  
 
   const colors = [
     { name: 'Rose', class: 'bg-rose-400' },
@@ -406,82 +360,95 @@ export default function GiftInteractive() {
           )}
 
           {step === 6 && (
-            <motion.div key="step6" variants={variants} initial="initial" animate="animate" exit="exit" className="text-center space-y-6 w-full px-4">
-              <div className="text-6xl animate-bounce mb-4">🎉</div>
-              <h2 className="font-serif text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100">
-                It&apos;s a Date!
-              </h2>
+            <motion.div key="step6" variants={variants} initial="initial" animate="animate" exit="exit" className="text-center w-full px-4 max-w-2xl mx-auto">
+              {/* Header */}
+              <div className="mb-8 relative">
+                <div className="text-6xl animate-bounce mb-6">💖</div>
+                <h2 className="font-serif text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-rose-500 to-purple-600 dark:from-rose-400 dark:to-purple-400">
+                  It&apos;s a Date!
+                </h2>
+                <p className="mt-4 text-gray-600 dark:text-gray-300 font-medium tracking-widest uppercase text-sm">
+                  You&apos;re officially invited
+                </p>
+              </div>
               
-              {/* ELEGANT GOLDEN TICKET */}
-              <div className="py-4">
-                <div 
-                  ref={ticketRef} 
-                  className="w-full max-w-lg mx-auto bg-gradient-to-br from-[#FFF9E6] to-[#FFF0C2] dark:from-[#1c1810] dark:to-[#0a0805] rounded-xl shadow-2xl p-2 relative overflow-hidden"
-                >
-                  {/* Outer Border */}
-                  <div className="border-[3px] border-[#D4AF37] border-double rounded-lg p-6 relative h-full flex flex-col justify-center">
-                    
-                    {/* Corner Decorations */}
-                    <div className="absolute top-2 left-2 w-4 h-4 border-t border-l border-[#D4AF37]" />
-                    <div className="absolute top-2 right-2 w-4 h-4 border-t border-r border-[#D4AF37]" />
-                    <div className="absolute bottom-2 left-2 w-4 h-4 border-b border-l border-[#D4AF37]" />
-                    <div className="absolute bottom-2 right-2 w-4 h-4 border-b border-r border-[#D4AF37]" />
+              {/* Premium Romantic Ticket */}
+              <div className="relative w-full rounded-[2rem] overflow-hidden p-1 shadow-2xl shadow-rose-500/20 dark:shadow-purple-900/30 mb-12">
+                {/* Animated Gradient Border Effect */}
+                <div className="absolute inset-0 bg-gradient-to-br from-rose-300 via-purple-300 to-rose-300 dark:from-rose-600 dark:via-purple-600 dark:to-rose-600 opacity-50" />
+                
+                {/* Inner Ticket */}
+                <div className="relative bg-white/90 dark:bg-[#111218]/95 backdrop-blur-xl rounded-[1.8rem] p-8 md:p-10 border border-white/50 dark:border-white/10">
+                  {/* Decorative Corner Elements */}
+                  <div className="absolute top-4 left-4 text-rose-300 dark:text-rose-700/50">✦</div>
+                  <div className="absolute top-4 right-4 text-rose-300 dark:text-rose-700/50">✦</div>
+                  <div className="absolute bottom-4 left-4 text-rose-300 dark:text-rose-700/50">✦</div>
+                  <div className="absolute bottom-4 right-4 text-rose-300 dark:text-rose-700/50">✦</div>
 
-                    <div className="text-center space-y-2 mb-8 mt-2">
-                      <p className="tracking-[0.4em] uppercase text-[10px] text-[#A67C00] dark:text-[#D4AF37] font-bold">Admit One • VIP Access</p>
-                      <h3 className="font-serif text-3xl md:text-4xl text-[#D4AF37] font-bold">5-Year Anniversary</h3>
+                  <h3 className="font-serif text-3xl font-bold text-rose-900 dark:text-rose-100 mb-8">
+                    5-Year Anniversary
+                  </h3>
+
+                  <div className="space-y-6 text-left">
+                    <div className="flex items-center gap-4 bg-rose-50/50 dark:bg-rose-900/10 p-4 rounded-2xl border border-rose-100 dark:border-rose-800/30 transition-transform hover:-translate-y-1">
+                      <div className="w-12 h-12 rounded-full bg-rose-100 dark:bg-rose-900/50 flex items-center justify-center flex-shrink-0">
+                        <CalendarDays className="w-6 h-6 text-rose-500 dark:text-rose-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs uppercase tracking-widest text-rose-400 dark:text-rose-500 font-semibold mb-1">When</p>
+                        <p className="font-serif font-bold text-gray-900 dark:text-gray-100 text-lg">{date}</p>
+                      </div>
                     </div>
 
-                    <div className="space-y-5 bg-white/50 dark:bg-black/40 p-6 rounded-md border border-[#D4AF37]/30">
-                       <div className="flex justify-between items-end border-b border-[#D4AF37]/20 pb-3">
-                         <span className="text-xs uppercase tracking-widest text-[#8C6900] dark:text-[#D4AF37]/80">Date</span>
-                         <span className="font-serif font-bold text-gray-900 dark:text-gray-100 text-xl">{date}</span>
-                       </div>
-                       <div className="flex justify-between items-end border-b border-[#D4AF37]/20 pb-3">
-                         <span className="text-xs uppercase tracking-widest text-[#8C6900] dark:text-[#D4AF37]/80">Location</span>
-                         <span className="font-serif font-bold text-gray-900 dark:text-gray-100 text-xl text-right max-w-[65%]">{place}</span>
-                       </div>
-                       <div className="flex justify-between items-end pb-1">
-                         <span className="text-xs uppercase tracking-widest text-[#8C6900] dark:text-[#D4AF37]/80">Dress Theme</span>
-                         <span className="font-serif font-bold text-[#D4AF37] text-xl">{color}</span>
-                       </div>
+                    <div className="flex items-center gap-4 bg-purple-50/50 dark:bg-purple-900/10 p-4 rounded-2xl border border-purple-100 dark:border-purple-800/30 transition-transform hover:-translate-y-1">
+                      <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center flex-shrink-0">
+                        <MapPin className="w-6 h-6 text-purple-500 dark:text-purple-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs uppercase tracking-widest text-purple-400 dark:text-purple-500 font-semibold mb-1">Where</p>
+                        <p className="font-serif font-bold text-gray-900 dark:text-gray-100 text-lg">{place}</p>
+                      </div>
                     </div>
 
-                    <div className="mt-10 mb-2 text-center">
-                      <p className="font-cursive text-4xl text-[#A67C00] dark:text-[#D4AF37]">I can&apos;t wait to celebrate with you!</p>
+                    <div className="flex items-center gap-4 bg-sky-50/50 dark:bg-sky-900/10 p-4 rounded-2xl border border-sky-100 dark:border-sky-800/30 transition-transform hover:-translate-y-1">
+                      <div className="w-12 h-12 rounded-full bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center flex-shrink-0">
+                        <Info className="w-6 h-6 text-sky-500 dark:text-sky-400" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs uppercase tracking-widest text-sky-400 dark:text-sky-500 font-semibold mb-1">Dress Theme</p>
+                        <p className="font-serif font-bold text-gray-900 dark:text-gray-100 text-lg">{color}</p>
+                      </div>
                     </div>
+                  </div>
+
+                  <div className="mt-10 text-center">
+                    <p className="font-cursive text-4xl text-rose-500 dark:text-rose-400">
+                      I can&apos;t wait to celebrate with you!
+                    </p>
                   </div>
                 </div>
               </div>
 
-              <button 
-                onClick={handleDownloadPDF}
-                disabled={isDownloading}
-                className="mx-auto mt-6 py-4 px-10 bg-gradient-to-r from-[#D4AF37] to-[#A67C00] hover:from-[#C5A059] hover:to-[#8C6900] text-white rounded-full font-bold flex items-center justify-center gap-2 shadow-xl transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
-              >
-                {isDownloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-                {isDownloading ? "Generating PDF..." : "Download VIP Ticket (PDF)"}
-              </button>
-
-              <div className="mt-12 bg-white/80 dark:bg-black/20 p-6 sm:p-8 rounded-[2rem] border border-rose-100 dark:border-white/10 shadow-lg shadow-rose-900/5 dark:shadow-none max-w-xl mx-auto backdrop-blur-sm relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-rose-300 via-rose-400 to-rose-300" />
-                <h3 className="font-serif text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-                  Send your RSVP...
+              {/* WhatsApp RSVP */}
+              <div className="bg-white/60 dark:bg-[#1a1b26]/60 backdrop-blur-md p-6 sm:p-8 rounded-[2rem] border border-rose-100/50 dark:border-white/5 shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-rose-400 to-purple-400" />
+                <h3 className="font-serif text-2xl font-bold text-gray-900 dark:text-gray-100 mb-3">
+                  Send Your RSVP 💌
                 </h3>
-                <p className="text-gray-600 dark:text-gray-300 text-sm mb-6">
-                  Add a cute message for me! It will be sent straight to my WhatsApp along with your RSVP so I know you are ready! ❤️
+                <p className="text-gray-600 dark:text-gray-400 text-sm mb-6 max-w-md mx-auto">
+                  Add a cute message below. It will pop up right in my WhatsApp so I know you&apos;ve locked it in!
                 </p>
                 <textarea 
                   value={customMessage}
                   onChange={(e) => setCustomMessage(e.target.value)}
                   placeholder="I can't wait! 🥰"
-                  className="w-full p-4 rounded-xl border border-rose-100 dark:border-white/20 bg-white dark:bg-[#111218] focus:ring-2 focus:ring-rose-300 outline-none mb-6 min-h-[100px] text-gray-800 dark:text-gray-200 custom-scrollbar resize-none"
+                  className="w-full p-5 rounded-2xl border border-rose-100 dark:border-white/10 bg-white dark:bg-black/40 focus:ring-2 focus:ring-rose-400 outline-none mb-6 min-h-[120px] text-gray-800 dark:text-gray-200 custom-scrollbar resize-none shadow-inner"
                 />
                 <button 
                   onClick={handleWhatsAppSend}
-                  className="w-full py-4 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg transition-all hover:-translate-y-1"
+                  className="w-full py-4 bg-gradient-to-r from-[#25D366] to-[#1DA851] hover:from-[#1DA851] hover:to-[#128C7E] text-white rounded-2xl font-bold flex items-center justify-center gap-3 shadow-lg shadow-green-500/20 transition-all hover:-translate-y-1 hover:shadow-green-500/40"
                 >
-                  <MessageCircle className="w-5 h-5" />
+                  <MessageCircle className="w-6 h-6" />
                   Send to my WhatsApp
                 </button>
               </div>
