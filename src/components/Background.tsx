@@ -1,63 +1,14 @@
-'use client'
-
-import { useEffect } from 'react'
-import { motion, useSpring, useMotionValue, useTransform } from 'framer-motion'
-
 export default function Background() {
-  const mouseX = useMotionValue(-1000)
-  const mouseY = useMotionValue(-1000)
-
-  // Parallax background springs (smooth and loose)
-  const parallaxX = useSpring(mouseX, { damping: 50, stiffness: 200 })
-  const parallaxY = useSpring(mouseY, { damping: 50, stiffness: 200 })
-  
-  const inverseX = useTransform(parallaxX, (v) => v * -0.05)
-  const inverseY = useTransform(parallaxY, (v) => v * -0.05)
-
-  // Glow light springs (fast trailing effect)
-  const glowX = useSpring(mouseX, { damping: 40, stiffness: 300 })
-  const glowY = useSpring(mouseY, { damping: 40, stiffness: 300 })
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      mouseX.set(e.clientX)
-      mouseY.set(e.clientY)
-    }
-
-    window.addEventListener('mousemove', handleMouseMove)
-    return () => window.removeEventListener('mousemove', handleMouseMove)
-  }, [mouseX, mouseY])
-
   return (
     <div className="fixed inset-0 overflow-hidden pointer-events-none -z-50 bg-[#fdfbf7]">
-      {/* Decorative interactive glowing orbs (parallax background) */}
-      <motion.div
-        style={{ 
-          x: inverseX, 
-          y: inverseY,
-          background: 'radial-gradient(circle, rgba(255, 228, 230, 0.6) 0%, transparent 70%)'
-        }}
+      {/* Decorative static glowing orbs */}
+      <div
         className="absolute top-[10%] left-[10%] w-[60vw] h-[60vw] rounded-full hidden md:block"
+        style={{ background: 'radial-gradient(circle, rgba(255, 228, 230, 0.6) 0%, transparent 70%)' }}
       />
-      <motion.div
-        style={{ 
-          x: useTransform(inverseX, v => -v), 
-          y: useTransform(inverseY, v => -v),
-          background: 'radial-gradient(circle, rgba(254, 243, 199, 0.6) 0%, transparent 70%)'
-        }}
+      <div
         className="absolute bottom-[0%] right-[0%] w-[50vw] h-[50vw] rounded-full hidden md:block"
-      />
-      
-      {/* The trailing color effect light (follows the exact cursor) */}
-      <motion.div
-        style={{ 
-          x: glowX, 
-          y: glowY, 
-          translateX: '-50%', 
-          translateY: '-50%',
-          background: 'radial-gradient(circle, rgba(254, 205, 211, 0.4) 0%, transparent 70%)'
-        }}
-        className="absolute top-0 left-0 w-[500px] h-[500px] rounded-full hidden md:block"
+        style={{ background: 'radial-gradient(circle, rgba(254, 243, 199, 0.6) 0%, transparent 70%)' }}
       />
 
       {/* Static noise/texture overlay for a premium feel */}
