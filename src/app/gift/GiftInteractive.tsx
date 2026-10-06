@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import html2canvas from 'html2canvas'
+import { jsPDF } from 'jspdf'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Memory } from '@/data/initialData'
 import { fetchMemories } from '@/lib/storage'
-import { Check, X, MapPin, Clock, CalendarDays, Wallet, Info, MessageCircle } from 'lucide-react'
+import { Check, X, MapPin, Clock, CalendarDays, Wallet, Info, MessageCircle, Download } from 'lucide-react'
 
 export default function GiftInteractive() {
   const [step, setStep] = useState(0)
@@ -16,6 +18,7 @@ export default function GiftInteractive() {
   // State for expanded place modal
   const [activePlace, setActivePlace] = useState<any | null>(null)
   const [customMessage, setCustomMessage] = useState('')
+  const ticketRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     async function loadPhoto() {
@@ -35,10 +38,27 @@ export default function GiftInteractive() {
 
   const handleWhatsAppSend = () => {
     const phoneNumber = "94741999926" 
-    const baseText = `*5-Year Anniversary RSVP* 💌\n\nI've officially locked in our date!\n📍 *Location:* ${place}\n📅 *Date:* ${date}\n\n`
-    const finalMessage = customMessage.trim() ? `${baseText}*My message to you:* ${customMessage}` : baseText
+    const baseText = `Hey my love! ❤️\n\nI'm so excited for our 5-Year Anniversary! 🥰\nI've chosen our perfect spot:\n📍 *Where:* ${place}\n📅 *When:* ${date}\n\n`
+    const finalMessage = customMessage.trim() ? `${baseText}*My message to you:* ${customMessage}` : `${baseText}I can't wait to see you! 😘`
     const encodedMessage = encodeURIComponent(finalMessage)
     window.open(`https://wa.me/${phoneNumber}?text=${encodedMessage}`, '_blank')
+  }
+
+  const handleDownloadPDF = async () => {
+    if (!ticketRef.current) return
+    try {
+      const canvas = await html2canvas(ticketRef.current, { backgroundColor: null, scale: 2 })
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'px',
+        format: [canvas.width, canvas.height]
+      })
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height)
+      pdf.save('5-Year-Anniversary-Invitation.pdf')
+    } catch (e) {
+      console.error("PDF generation failed", e)
+    }
   }
 
   const colors = [
@@ -362,7 +382,7 @@ export default function GiftInteractive() {
             <motion.div key="step6" variants={variants} initial="initial" animate="animate" exit="exit" className="text-center space-y-6 w-full px-4">
               <div className="text-6xl animate-bounce mb-4">🎉</div>
               <h2 className="font-serif text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100">
-                It's a Date!
+                It&apos;s a Date!
               </h2>
               <div className="text-gray-600 dark:text-gray-300 text-lg space-y-3 bg-white/60 dark:bg-white/10 p-8 rounded-3xl border border-rose-100 dark:border-white/10 inline-block text-left shadow-sm mt-8">
                 <p className="flex items-center gap-3"><CalendarDays className="w-5 h-5 text-rose-400" /> <strong className="text-gray-900 dark:text-gray-100">Date:</strong> {date}</p>
@@ -375,7 +395,7 @@ export default function GiftInteractive() {
                   One last thing...
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300 text-sm mb-6">
-                  Write a cute little message to me below. It will be sent to my WhatsApp along with your RSVP so I know you've locked it in! 
+                  Write a cute little message to me below. It will be sent to my WhatsApp along with your RSVP so I know you&apos;ve locked it in! 
                 </p>
                 <textarea 
                   value={customMessage}
