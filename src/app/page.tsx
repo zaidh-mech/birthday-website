@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { Sparkles } from 'lucide-react'
+import Link from 'next/link'
 
 export default function Home() {
   const containerVars = {
@@ -45,12 +46,12 @@ export default function Home() {
         </motion.p>
 
         <motion.div variants={itemVars} className="pt-6">
-          <a 
+          <Link 
             href="/gift"
             className="inline-block px-10 py-5 bg-rose-400 text-white rounded-full font-medium hover:bg-rose-500 transition-all shadow-sm hover:shadow-md hover:-translate-y-1"
           >
             Explore your birthday gift
-          </a>
+          </Link>
         </motion.div>
 
         <motion.div 
