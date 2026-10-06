@@ -17,10 +17,10 @@ export interface Memory {
 export const initialLetters: Letter[] = [
   {
     id: 'letter-1',
-    title: 'Happy Birthday, My Favorite Person',
-    occasion: 'Birthday Wishes',
+    title: 'Happy 5 Years & Happy Birthday, My Love',
+    occasion: 'Anniversary & Birthday',
     date: new Date().toISOString(),
-    content: `Happy Birthday! 🎈\n\nI wanted to create something special, a little corner of the world that exists just for you. Every moment we spend together makes life brighter and warmer.\n\nThank you for being yourself, for your laughter, and for all the little everyday adventures. I hope this year brings you as much happiness, peace, and excitement as you bring to everyone around you.\n\nWith all my love, always.`
+    content: `Happy 5 Years & Happy Birthday! 🎉\n\nI wanted to create something special, a little corner of the world that exists just for you. Every moment of the past 5 years we have spent together has made life brighter and warmer.\n\nThank you for being yourself, for your laughter, and for all the little everyday adventures over these 5 beautiful years. I hope this year brings you as much happiness, peace, and excitement as you bring to everyone around you.\n\nWith all my love, always.`
   },
   {
     id: 'letter-2',

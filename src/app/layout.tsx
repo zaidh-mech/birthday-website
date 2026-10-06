@@ -11,8 +11,8 @@ const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfa
 const dancingScript = Dancing_Script({ subsets: ["latin"], variable: "--font-dancing" });
 
 export const metadata: Metadata = {
-  title: "A little birthday universe",
-  description: "Letters, memories and little moments, just for you.",
+  title: "5 Years & Happy Birthday",
+  description: "Letters, memories, and 5 beautiful years of moments, just for you.",
 };
 
 export default function RootLayout({

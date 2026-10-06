@@ -179,9 +179,14 @@ export default function GiftInteractive() {
           
           {step === 0 && (
             <motion.div key="step0" variants={variants} initial="initial" animate="animate" exit="exit" className="text-center space-y-8 w-full px-4">
-              <h2 className="font-serif text-3xl md:text-5xl font-bold text-gray-900 dark:text-gray-100">
-                May I take you out on a date with me?
-              </h2>
+              <div className="space-y-4">
+                <p className="text-rose-400 dark:text-purple-300 font-semibold text-sm sm:text-base uppercase tracking-[0.2em]">
+                  To celebrate our 5 Years & Your Birthday
+                </p>
+                <h2 className="font-serif text-3xl md:text-5xl font-bold text-gray-900 dark:text-gray-100">
+                  May I take you out on a date with me?
+                </h2>
+              </div>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
                 <button onClick={handleYes} className="w-full sm:w-auto px-10 py-4 bg-rose-400 text-white rounded-full font-medium hover:bg-rose-500 hover:scale-105 transition-all shadow-md">
                   Yes!

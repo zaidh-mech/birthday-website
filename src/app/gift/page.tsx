@@ -1,7 +1,7 @@
 import GiftInteractive from './GiftInteractive'
 
 export const metadata = {
-  title: 'Your Birthday Gift',
+  title: 'Your Surprise Gift',
   description: 'A special surprise just for you.',
 }
 

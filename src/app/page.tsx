@@ -37,12 +37,13 @@ export default function Home() {
         </motion.div>
 
         <motion.h1 variants={itemVars} className="font-serif text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-none transition-colors duration-1000 text-gray-900 dark:text-gray-100">
-          Happy birthday,<br />
+          Happy 5 Years,<br />
+          & Happy Birthday <br />
           <span className="font-dancing font-normal pr-4 transition-colors duration-1000 text-rose-400 dark:text-purple-300">my everything.</span>
         </motion.h1>
         
         <motion.p variants={itemVars} className="font-sans text-xl md:text-2xl leading-relaxed font-light max-w-2xl mx-auto transition-colors duration-1000 text-gray-600 dark:text-gray-300">
-          A tiny universe holding my letters to you, our memories, and all the quiet moments we share. Just for you.
+          A tiny universe holding my letters to you, our memories from the past 5 years, and all the quiet moments we share.
         </motion.p>
 
         <motion.div variants={itemVars} className="pt-6">
@@ -50,7 +51,7 @@ export default function Home() {
             href="/gift"
             className="inline-block px-10 py-5 text-white rounded-full font-medium transition-all shadow-sm hover:shadow-md hover:-translate-y-1 duration-700 bg-rose-400 hover:bg-rose-500 dark:bg-purple-500/80 dark:hover:bg-purple-500 dark:backdrop-blur-md dark:shadow-purple-500/20"
           >
-            Explore your birthday gift
+            Explore your surprise gift
           </Link>
         </motion.div>
 
