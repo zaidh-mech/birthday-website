@@ -42,8 +42,8 @@ export default function Home() {
           <span className="font-cursive font-normal pr-4 transition-colors duration-1000 text-rose-400 dark:text-purple-300">my everything.</span>
         </motion.h1>
         
-        <motion.p variants={itemVars} className="font-sans text-xl md:text-2xl leading-relaxed font-light max-w-2xl mx-auto transition-colors duration-1000 text-gray-600 dark:text-gray-300">
-          A tiny universe holding my letters to you, our memories from the past 5 years, and all the quiet moments we share.
+        <motion.p variants={itemVars} className="font-serif italic text-xl md:text-2xl leading-relaxed text-rose-900/80 dark:text-rose-100/80 max-w-2xl mx-auto transition-colors duration-1000">
+          &quot;A tiny universe holding my letters to you, our memories from the past 5 years, and all the quiet moments we share.&quot;
         </motion.p>
 
         <motion.div variants={itemVars} className="pt-6">
