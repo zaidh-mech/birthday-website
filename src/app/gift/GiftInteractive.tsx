@@ -380,9 +380,9 @@ export default function GiftInteractive() {
       {/* Expanded Place Modal Content */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 pointer-events-none">
         <AnimatePresence>
-          {expandedPlaceId && expandedPlace && (
+          {places.map(expandedPlace => expandedPlace.id === expandedPlaceId && (
             <motion.div
-              key="expanded-modal"
+              key={expandedPlace.id}
               layoutId={`card-${expandedPlace.id}`}
               className={`relative w-full max-w-3xl rounded-[2rem] overflow-hidden shadow-2xl flex flex-col md:flex-row z-10 pointer-events-auto ${expandedPlace.themeClass}`}
             >
@@ -450,7 +450,7 @@ export default function GiftInteractive() {
                 </button>
               </div>
             </motion.div>
-          )}
+          ))}
         </AnimatePresence>
       </div>
     </div>
