@@ -34,8 +34,7 @@ export default function GiftInteractive() {
   const handleNo2 = () => setStep(2)
 
   const handleWhatsAppSend = () => {
-    // Note to user: Replace this placeholder with your actual phone number (include country code, no + or spaces, e.g. 94771234567)
-    const phoneNumber = "YOUR_PHONE_NUMBER_HERE" 
+    const phoneNumber = "94741999926" 
     const baseText = `*5-Year Anniversary RSVP* 💌\n\nI've officially locked in our date!\n📍 *Location:* ${place}\n📅 *Date:* ${date}\n\n`
     const finalMessage = customMessage.trim() ? `${baseText}*My message to you:* ${customMessage}` : baseText
     const encodedMessage = encodeURIComponent(finalMessage)
