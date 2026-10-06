@@ -1,24 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Sparkles, Moon, Sun } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { Sparkles } from 'lucide-react'
 import Link from 'next/link'
+import { useTheme } from 'next-themes'
 
 export default function Home() {
-  const [isNightMode, setIsNightMode] = useState(false)
-  const [stars, setStars] = useState<{ id: number; x: number; y: number; size: number; delay: number }[]>([])
+  const [mounted, setMounted] = useState(false)
+  const { theme } = useTheme()
 
-  // Generate random stars on mount
   useEffect(() => {
-    const generatedStars = Array.from({ length: 80 }).map((_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: Math.random() * 2.5 + 0.5,
-      delay: Math.random() * 4
-    }))
-    setStars(generatedStars)
+    setMounted(true)
   }, [])
 
   const containerVars = {
@@ -34,79 +27,16 @@ export default function Home() {
     show: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] as const } }
   }
 
+  // Prevent hydration mismatch
+  if (!mounted) {
+    return <main className="flex-1 flex flex-col items-center justify-center p-6 relative overflow-hidden transition-colors duration-1000" />
+  }
+
+  const isNightMode = theme === 'dark'
+
   return (
     <main className="flex-1 flex flex-col items-center justify-center p-6 relative overflow-hidden transition-colors duration-1000">
       
-      {/* Night Mode Toggle */}
-      <button 
-        onClick={() => setIsNightMode(!isNightMode)}
-        className={`absolute top-6 right-6 z-50 p-3 rounded-full backdrop-blur-md transition-all duration-700 shadow-sm ${
-          isNightMode ? 'bg-white/10 text-yellow-100 hover:bg-white/20' : 'bg-white/50 text-indigo-900 hover:bg-white/80'
-        }`}
-      >
-        {isNightMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-      </button>
-
-      {/* Night Sky Background */}
-      <AnimatePresence>
-        {isNightMode && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1.5, ease: "easeInOut" }}
-            className="fixed inset-0 z-[-10] bg-[#0B0C10] overflow-hidden"
-          >
-            {/* Deep space radial glow (Milky Way base) */}
-            <div className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] rounded-full mix-blend-screen opacity-40 blur-[120px]" style={{ background: 'radial-gradient(circle, #2d1b6e 0%, transparent 70%)' }} />
-            <div className="absolute bottom-[-10%] right-[-10%] w-[80vw] h-[80vw] rounded-full mix-blend-screen opacity-30 blur-[100px]" style={{ background: 'radial-gradient(circle, #1f4068 0%, transparent 70%)' }} />
-
-            {/* The Moon */}
-            <motion.div 
-              initial={{ y: 50, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 2, ease: "easeOut", delay: 0.5 }}
-              className="absolute top-[15%] right-[15%] w-32 h-32 md:w-48 md:h-48 rounded-full shadow-[0_0_80px_20px_rgba(253,244,255,0.2)]"
-              style={{
-                background: 'radial-gradient(circle at 30% 30%, #fff, #fdf4ff 40%, #e0c8eb 80%, #b294c4)',
-              }}
-            >
-              {/* Moon craters */}
-              <div className="absolute top-[20%] left-[20%] w-[20%] h-[20%] rounded-full bg-black/10 blur-[2px]" />
-              <div className="absolute bottom-[30%] right-[25%] w-[30%] h-[25%] rounded-full bg-black/10 blur-[3px]" />
-              <div className="absolute top-[40%] right-[15%] w-[15%] h-[15%] rounded-full bg-black/10 blur-[1px]" />
-            </motion.div>
-
-            {/* Stars */}
-            {stars.map((star) => (
-              <motion.div
-                key={star.id}
-                className="absolute bg-white rounded-full"
-                style={{
-                  left: `${star.x}%`,
-                  top: `${star.y}%`,
-                  width: `${star.size}px`,
-                  height: `${star.size}px`,
-                  boxShadow: `0 0 ${star.size * 2}px rgba(255, 255, 255, 0.8)`
-                }}
-                animate={{
-                  opacity: [0.2, 1, 0.2],
-                  scale: [1, 1.2, 1],
-                  x: [0, Math.random() * 20 - 10], // Slight drifting motion
-                  y: [0, Math.random() * 20 - 10]
-                }}
-                transition={{
-                  duration: Math.random() * 5 + 5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: star.delay
-                }}
-              />
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <motion.div 
         variants={containerVars}
         initial="hidden"
