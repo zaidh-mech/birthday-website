@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { getMemoriesWithPasscode } from '@/app/actions/memoriesAuth'
 import MemoriesGallery from './MemoriesGallery'
 import { motion } from 'framer-motion'
@@ -18,6 +18,12 @@ export default function MemoriesContainer() {
   const [memories, setMemories] = useState<Memory[] | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Force reset state whenever this page is visited/mounted
+  useEffect(() => {
+    setMemories(null)
+    setError('')
+  }, [])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
