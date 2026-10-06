@@ -4,22 +4,24 @@ import { useEffect } from 'react'
 import { motion, useSpring, useMotionValue, useTransform } from 'framer-motion'
 
 export default function Background() {
-  const mouseX = useMotionValue(0)
-  const mouseY = useMotionValue(0)
+  const mouseX = useMotionValue(-1000)
+  const mouseY = useMotionValue(-1000)
 
-  const springX = useSpring(mouseX, { damping: 50, stiffness: 200 })
-  const springY = useSpring(mouseY, { damping: 50, stiffness: 200 })
+  // Parallax background springs (smooth and loose)
+  const parallaxX = useSpring(mouseX, { damping: 50, stiffness: 200 })
+  const parallaxY = useSpring(mouseY, { damping: 50, stiffness: 200 })
+  
+  const inverseX = useTransform(parallaxX, (v) => v * -0.05)
+  const inverseY = useTransform(parallaxY, (v) => v * -0.05)
 
-  const inverseX = useTransform(springX, (v) => v * -0.5)
-  const inverseY = useTransform(springY, (v) => v * -0.5)
+  // Glow light springs (fast trailing effect)
+  const glowX = useSpring(mouseX, { damping: 40, stiffness: 300 })
+  const glowY = useSpring(mouseY, { damping: 40, stiffness: 300 })
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      // Calculate normalized mouse position from center (-1 to 1)
-      const x = (e.clientX / window.innerWidth - 0.5) * 2
-      const y = (e.clientY / window.innerHeight - 0.5) * 2
-      mouseX.set(x * 100)
-      mouseY.set(y * 100)
+      mouseX.set(e.clientX)
+      mouseY.set(e.clientY)
     }
 
     window.addEventListener('mousemove', handleMouseMove)
@@ -28,16 +30,22 @@ export default function Background() {
 
   return (
     <div className="fixed inset-0 overflow-hidden pointer-events-none -z-50 bg-[#fdfbf7]">
-      {/* Decorative interactive glowing orbs */}
-      <motion.div
-        style={{ x: springX, y: springY }}
-        className="absolute top-[20%] left-[20%] w-[50vw] h-[50vw] bg-rose-100/40 rounded-full blur-[100px] mix-blend-multiply"
-      />
+      {/* Decorative interactive glowing orbs (parallax background) */}
       <motion.div
         style={{ x: inverseX, y: inverseY }}
-        className="absolute bottom-[10%] right-[10%] w-[40vw] h-[40vw] bg-amber-100/40 rounded-full blur-[100px] mix-blend-multiply"
+        className="absolute top-[20%] left-[20%] w-[50vw] h-[50vw] bg-rose-100/40 rounded-full blur-[100px] mix-blend-multiply hidden md:block"
+      />
+      <motion.div
+        style={{ x: useTransform(inverseX, v => -v), y: useTransform(inverseY, v => -v) }}
+        className="absolute bottom-[10%] right-[10%] w-[40vw] h-[40vw] bg-amber-100/40 rounded-full blur-[100px] mix-blend-multiply hidden md:block"
       />
       
+      {/* The trailing color effect light (follows the exact cursor) */}
+      <motion.div
+        style={{ x: glowX, y: glowY, translateX: '-50%', translateY: '-50%' }}
+        className="absolute top-0 left-0 w-[400px] h-[400px] bg-rose-200/30 rounded-full blur-[100px] mix-blend-multiply hidden md:block"
+      />
+
       {/* Static noise/texture overlay for a premium feel */}
       <div 
         className="absolute inset-0 opacity-[0.03] mix-blend-overlay"

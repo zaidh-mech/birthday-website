@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display, Dancing_Script } from "next/font/google";
 import Navigation from "@/components/Navigation";
-import CustomCursor from "@/components/CustomCursor";
 import Background from "@/components/Background";
 import "./globals.css";
 
@@ -23,7 +22,6 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} ${playfair.variable} ${dancingScript.variable} antialiased min-h-screen flex flex-col`}>
         <Background />
-        <CustomCursor />
         <Navigation />
         {children}
       </body>
