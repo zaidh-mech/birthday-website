@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { saveMemory } from '@/lib/storage'
+import { createMemory } from '@/lib/storage'
 import { Memory } from '@/data/initialData'
 import { Upload, Link as LinkIcon, Image as ImageIcon } from 'lucide-react'
 
@@ -9,6 +9,7 @@ export default function UploadForm({ onMemorySaved }: { onMemorySaved: (memory: 
   const formRef = useRef<HTMLFormElement>(null)
   const [title, setTitle] = useState('')
   const [caption, setCaption] = useState('')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [imageUrlInput, setImageUrlInput] = useState('')
   const [useUrlMode, setUseUrlMode] = useState(false)
@@ -17,12 +18,14 @@ export default function UploadForm({ onMemorySaved }: { onMemorySaved: (memory: 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
+      setSelectedFile(file)
       const reader = new FileReader()
       reader.onload = () => {
         setPreview(reader.result as string)
       }
       reader.readAsDataURL(file)
     } else {
+      setSelectedFile(null)
       setPreview(null)
     }
   }
@@ -32,28 +35,43 @@ export default function UploadForm({ onMemorySaved }: { onMemorySaved: (memory: 
     setPreview(e.target.value || null)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const finalImage = useUrlMode ? imageUrlInput : preview
-    if (!finalImage || !title || !caption) {
-      alert('Please fill out all fields and select or link a photo.')
+    if (!useUrlMode && !selectedFile && !preview) {
+      alert('Please select a photo to upload.')
+      return
+    }
+    if (useUrlMode && !imageUrlInput) {
+      alert('Please enter a photo URL.')
+      return
+    }
+    if (!title || !caption) {
+      alert('Please enter a title and caption.')
       return
     }
 
     setUploading(true)
-    const newMemory = saveMemory({
-      title,
-      caption,
-      imagePath: finalImage,
-    })
+    try {
+      const newMemory = await createMemory({
+        title,
+        caption,
+        imagePath: useUrlMode ? imageUrlInput : preview || undefined,
+        file: useUrlMode ? null : selectedFile,
+      })
 
-    onMemorySaved(newMemory)
-    setTitle('')
-    setCaption('')
-    setPreview(null)
-    setImageUrlInput('')
-    formRef.current?.reset()
-    setUploading(false)
+      onMemorySaved(newMemory)
+      setTitle('')
+      setCaption('')
+      setPreview(null)
+      setSelectedFile(null)
+      setImageUrlInput('')
+      formRef.current?.reset()
+    } catch (err: any) {
+      console.error(err)
+      alert('Error saving memory: ' + (err.message || 'Unknown error'))
+    } finally {
+      setUploading(false)
+    }
   }
 
   return (
@@ -66,7 +84,7 @@ export default function UploadForm({ onMemorySaved }: { onMemorySaved: (memory: 
             !useUrlMode ? 'text-rose-600 border-b-2 border-rose-600' : 'text-gray-400 hover:text-gray-600'
           }`}
         >
-          <Upload className="w-3.5 h-3.5" /> Upload Photo
+          <Upload className="w-3.5 h-3.5" /> Upload File (Cloud / Local)
         </button>
         <button
           type="button"
@@ -85,7 +103,7 @@ export default function UploadForm({ onMemorySaved }: { onMemorySaved: (memory: 
             type="text" 
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Memory Title (e.g. Paris in November)" 
+            placeholder="Memory Title (e.g. Sunset in Venice)" 
             required 
             className="px-4 py-2.5 border border-gray-200 rounded-xl w-full text-sm focus:outline-none focus:ring-2 focus:ring-rose-200" 
           />
@@ -137,7 +155,7 @@ export default function UploadForm({ onMemorySaved }: { onMemorySaved: (memory: 
         disabled={uploading}
         className="bg-gray-900 text-white px-6 py-2.5 rounded-xl font-medium text-sm hover:bg-gray-800 transition-colors disabled:opacity-50"
       >
-        {uploading ? 'Saving Memory...' : 'Save Memory'}
+        {uploading ? 'Uploading to Cloud...' : 'Save Memory'}
       </button>
     </form>
   )

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getMemories, deleteMemory } from '@/lib/storage'
+import { fetchMemories, removeMemory } from '@/lib/storage'
 import { Memory } from '@/data/initialData'
 import { format } from 'date-fns'
 import UploadForm from './UploadForm'
@@ -11,16 +11,16 @@ export default function AdminMemoriesPage() {
   const [memories, setMemories] = useState<Memory[]>([])
 
   useEffect(() => {
-    setMemories(getMemories())
+    fetchMemories().then(setMemories)
   }, [])
 
   const handleMemorySaved = (newMemory: Memory) => {
     setMemories([newMemory, ...memories])
   }
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this memory?')) {
-      deleteMemory(id)
+      await removeMemory(id)
       setMemories(memories.filter((m) => m.id !== id))
     }
   }
@@ -29,7 +29,7 @@ export default function AdminMemoriesPage() {
     <div className="space-y-10 max-w-5xl">
       <div>
         <h1 className="text-3xl font-serif font-bold text-gray-900 mb-2">Memories Studio</h1>
-        <p className="text-gray-500 text-sm">Upload photos and manage your photo album.</p>
+        <p className="text-gray-500 text-sm">Upload photos and manage your photo album in the cloud.</p>
       </div>
 
       <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">

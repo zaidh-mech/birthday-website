@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getLetters, saveLetter, deleteLetter } from '@/lib/storage'
+import { fetchLetters, createLetter, removeLetter } from '@/lib/storage'
 import { Letter } from '@/data/initialData'
 import { format } from 'date-fns'
 import { Trash2, Plus, BookOpen } from 'lucide-react'
@@ -14,14 +14,14 @@ export default function AdminLettersPage() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    setLetters(getLetters())
+    fetchLetters().then(setLetters)
   }, [])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title || !content || !occasion) return
     setSaving(true)
-    const newLetter = saveLetter({ title, occasion, content })
+    const newLetter = await createLetter({ title, occasion, content })
     setLetters([newLetter, ...letters])
     setTitle('')
     setOccasion('')
@@ -29,9 +29,9 @@ export default function AdminLettersPage() {
     setSaving(false)
   }
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this letter?')) {
-      deleteLetter(id)
+      await removeLetter(id)
       setLetters(letters.filter((l) => l.id !== id))
     }
   }
@@ -40,7 +40,7 @@ export default function AdminLettersPage() {
     <div className="space-y-10 max-w-5xl">
       <div>
         <h1 className="text-3xl font-serif font-bold text-gray-900 mb-2">Letters Studio</h1>
-        <p className="text-gray-500 text-sm">Create and manage personal letters.</p>
+        <p className="text-gray-500 text-sm">Create and manage personal letters in the cloud.</p>
       </div>
 
       <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">

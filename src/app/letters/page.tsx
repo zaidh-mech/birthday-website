@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import LettersClient from './LettersClient'
-import { getLetters } from '@/lib/storage'
+import { fetchLetters } from '@/lib/storage'
 import { Letter } from '@/data/initialData'
 
 export default function LettersPage() {
@@ -10,8 +10,10 @@ export default function LettersPage() {
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
-    setLetters(getLetters())
-    setLoaded(true)
+    fetchLetters().then((data) => {
+      setLetters(data)
+      setLoaded(true)
+    })
   }, [])
 
   return (

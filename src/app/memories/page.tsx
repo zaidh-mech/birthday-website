@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import PasscodeForm from './PasscodeForm'
 import MemoriesGallery from './MemoriesGallery'
-import { getMemories, isSessionAuthorized } from '@/lib/storage'
+import { fetchMemories, isSessionAuthorized } from '@/lib/storage'
 import { Memory } from '@/data/initialData'
 
 export default function MemoriesPage() {
@@ -14,13 +14,13 @@ export default function MemoriesPage() {
     const isAuth = isSessionAuthorized('viewer')
     setAuthorized(isAuth)
     if (isAuth) {
-      setMemories(getMemories())
+      fetchMemories().then(setMemories)
     }
   }, [])
 
   const handleUnlock = () => {
     setAuthorized(true)
-    setMemories(getMemories())
+    fetchMemories().then(setMemories)
   }
 
   if (authorized === null) {
