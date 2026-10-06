@@ -14,7 +14,7 @@ export default function GiftInteractive() {
   const [cuteFellaPhoto, setCuteFellaPhoto] = useState<string | null>(null)
   
   // State for expanded place modal
-  const [expandedPlaceId, setExpandedPlaceId] = useState<string | null>(null)
+  const [activePlace, setActivePlace] = useState<any | null>(null)
 
   useEffect(() => {
     async function loadPhoto() {
@@ -164,7 +164,7 @@ export default function GiftInteractive() {
     }
   ]
 
-  const expandedPlace = places.find(p => p.id === expandedPlaceId)
+  
 
   const variants: any = {
     initial: { opacity: 0, scale: 0.95, y: 10 },
@@ -310,7 +310,7 @@ export default function GiftInteractive() {
                   <motion.div 
                     key={p.id}
                     layoutId={`card-${p.id}`}
-                    onClick={() => setExpandedPlaceId(p.id)}
+                    onClick={() => setActivePlace(p)}
                     className="group relative h-80 rounded-3xl overflow-hidden cursor-pointer shadow-sm hover:shadow-xl transition-all"
                   >
                     <img src={p.image} alt={p.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
@@ -365,13 +365,13 @@ export default function GiftInteractive() {
 
       {/* Expanded Place Modal Backdrop */}
       <AnimatePresence>
-        {expandedPlaceId && (
+        {activePlace && (
           <motion.div
             key="backdrop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setExpandedPlaceId(null)}
+            onClick={() => setActivePlace(null)}
             className="fixed inset-0 z-40 bg-gray-900/60 backdrop-blur-md"
           />
         )}
@@ -380,14 +380,14 @@ export default function GiftInteractive() {
       {/* Expanded Place Modal Content */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 pointer-events-none">
         <AnimatePresence>
-          {places.map(expandedPlace => expandedPlace.id === expandedPlaceId && (
+          {activePlace && (
             <motion.div
-              key={expandedPlace.id}
-              layoutId={`card-${expandedPlace.id}`}
-              className={`relative w-full max-w-3xl rounded-[2rem] overflow-hidden shadow-2xl flex flex-col md:flex-row z-10 pointer-events-auto ${expandedPlace.themeClass}`}
+              key={`modal-${activePlace.id}`}
+              layoutId={`card-${activePlace.id}`}
+              className={`relative w-full max-w-3xl rounded-[2rem] overflow-hidden shadow-2xl flex flex-col md:flex-row z-10 pointer-events-auto ${activePlace.themeClass}`}
             >
               <button 
-                onClick={() => setExpandedPlaceId(null)}
+                onClick={() => setActivePlace(null)}
                 className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full z-20 transition-colors backdrop-blur-sm"
               >
                 <X className="w-5 h-5" />
@@ -395,8 +395,8 @@ export default function GiftInteractive() {
               
               <div className="w-full md:w-1/2 h-64 md:h-auto relative">
                  <img 
-                   src={expandedPlace.image} 
-                   alt={expandedPlace.name}
+                   src={activePlace.image} 
+                   alt={activePlace.name}
                    className="absolute inset-0 w-full h-full object-cover"
                  />
               </div>
@@ -404,32 +404,32 @@ export default function GiftInteractive() {
               <div className="w-full md:w-1/2 p-8 md:p-10 flex flex-col justify-between">
                 <div>
                   <span className="text-xs font-bold tracking-[0.2em] uppercase mb-2 block opacity-70">
-                    {expandedPlace.type}
+                    {activePlace.type}
                   </span>
                   <h2 className="font-serif text-3xl md:text-4xl font-bold mb-1">
-                    {expandedPlace.name}
+                    {activePlace.name}
                   </h2>
                   <p className="text-sm font-medium opacity-80 mb-6">
-                    {expandedPlace.subtitle}
+                    {activePlace.subtitle}
                   </p>
 
                   <div className="space-y-4 mb-8">
                     <p className="text-base leading-relaxed italic opacity-90">
-                      "{expandedPlace.ambiance}"
+                      "{activePlace.ambiance}"
                     </p>
                     
-                    <div className={`p-4 rounded-2xl border space-y-3 ${expandedPlace.accentClass}`}>
+                    <div className={`p-4 rounded-2xl border space-y-3 ${activePlace.accentClass}`}>
                       <div className="flex items-center gap-3 text-sm">
                         <CalendarDays className="w-4 h-4 opacity-70" />
-                        <span>{expandedPlace.days}</span>
+                        <span>{activePlace.days}</span>
                       </div>
                       <div className="flex items-center gap-3 text-sm">
                         <Clock className="w-4 h-4 opacity-70" />
-                        <span>{expandedPlace.time}</span>
+                        <span>{activePlace.time}</span>
                       </div>
                       <div className="flex items-center gap-3 text-sm">
                         <Wallet className="w-4 h-4 opacity-70" />
-                        <span>{expandedPlace.price}</span>
+                        <span>{activePlace.price}</span>
                       </div>
                     </div>
                   </div>
@@ -437,12 +437,12 @@ export default function GiftInteractive() {
 
                 <button 
                   onClick={() => {
-                    setPlace(expandedPlace.name)
-                    setExpandedPlaceId(null)
+                    setPlace(activePlace.name)
+                    setActivePlace(null)
                   }}
-                  className={`w-full py-4 rounded-full font-bold text-lg shadow-md transition-all hover:scale-105 flex items-center justify-center gap-2 ${expandedPlace.buttonClass}`}
+                  className={`w-full py-4 rounded-full font-bold text-lg shadow-md transition-all hover:scale-105 flex items-center justify-center gap-2 ${activePlace.buttonClass}`}
                 >
-                  {place === expandedPlace.name ? (
+                  {place === activePlace.name ? (
                     <>Selected <Check className="w-5 h-5" /></>
                   ) : (
                     'Select this place'
@@ -450,7 +450,7 @@ export default function GiftInteractive() {
                 </button>
               </div>
             </motion.div>
-          ))}
+          )}
         </AnimatePresence>
       </div>
     </div>
