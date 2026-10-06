@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import html2canvas from 'html2canvas'
+import { toPng } from 'html-to-image'
 import { jsPDF } from 'jspdf'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Memory } from '@/data/initialData'
@@ -52,23 +52,27 @@ export default function GiftInteractive() {
       // Small delay
       await new Promise(r => setTimeout(r, 150))
       
-      const canvas = await html2canvas(ticketRef.current, { 
-        backgroundColor: null, 
-        scale: 2,
-        useCORS: true,
-        logging: false
-      })
+      const el = ticketRef.current;
+      const imgData = await toPng(el, { 
+        pixelRatio: 2, 
+        cacheBust: true,
+        style: {
+          transform: 'scale(1)',
+          transformOrigin: 'top left'
+        }
+      });
       
-      const imgData = canvas.toDataURL('image/png', 1.0)
+      const width = el.offsetWidth;
+      const height = el.offsetHeight;
       
       const pdf = new jsPDF({
-        orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+        orientation: width > height ? 'landscape' : 'portrait',
         unit: 'mm',
         format: 'a4'
       })
       
       const pdfWidth = pdf.internal.pageSize.getWidth()
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width
+      const pdfHeight = (height * pdfWidth) / width
       
       const xOffset = 0
       const yOffset = 10 // slightly down from top
