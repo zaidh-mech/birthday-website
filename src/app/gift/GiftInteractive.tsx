@@ -384,36 +384,71 @@ export default function GiftInteractive() {
               <h2 className="font-serif text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100">
                 It&apos;s a Date!
               </h2>
-              <div className="text-gray-600 dark:text-gray-300 text-lg space-y-3 bg-white/60 dark:bg-white/10 p-8 rounded-3xl border border-rose-100 dark:border-white/10 inline-block text-left shadow-sm mt-8">
-                <p className="flex items-center gap-3"><CalendarDays className="w-5 h-5 text-rose-400" /> <strong className="text-gray-900 dark:text-gray-100">Date:</strong> {date}</p>
-                <p className="flex items-center gap-3"><MapPin className="w-5 h-5 text-rose-400" /> <strong className="text-gray-900 dark:text-gray-100">Location:</strong> {place}</p>
-                <p className="flex items-center gap-3"><Info className="w-5 h-5 text-rose-400" /> <strong className="text-gray-900 dark:text-gray-100">Secret Theme:</strong> {color}</p>
+              
+              {/* GLASS TICKET */}
+              <div className="relative p-1">
+                <div 
+                  ref={ticketRef} 
+                  className="relative w-full max-w-md mx-auto rounded-3xl overflow-hidden p-8 border border-white/60 dark:border-white/20 shadow-xl backdrop-blur-xl bg-white/30 dark:bg-black/40 mt-8"
+                >
+                  <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-rose-200/40 to-purple-300/40 dark:from-rose-900/40 dark:to-purple-900/40 pointer-events-none" />
+                  <div className="relative z-10 text-center">
+                    <h3 className="font-serif text-3xl md:text-4xl font-bold text-rose-600 dark:text-rose-400 mb-1">5-Year Anniversary</h3>
+                    <p className="text-rose-800 dark:text-rose-200 font-medium tracking-[0.2em] uppercase text-xs mb-8">Official Invitation</p>
+                    
+                    <div className="space-y-4 text-left bg-white/50 dark:bg-black/50 p-6 rounded-2xl border border-white/60 dark:border-white/10 shadow-inner">
+                      <p className="flex justify-between border-b border-rose-200/50 dark:border-rose-900/50 pb-2 items-center">
+                        <span className="text-gray-600 dark:text-gray-400 text-sm flex items-center gap-2"><CalendarDays className="w-4 h-4" /> Date</span>
+                        <span className="font-bold text-gray-900 dark:text-white">{date}</span>
+                      </p>
+                      <p className="flex justify-between border-b border-rose-200/50 dark:border-rose-900/50 pb-2 items-center">
+                        <span className="text-gray-600 dark:text-gray-400 text-sm flex items-center gap-2"><MapPin className="w-4 h-4" /> Location</span>
+                        <span className="font-bold text-gray-900 dark:text-white text-right max-w-[60%] truncate">{place}</span>
+                      </p>
+                      <p className="flex justify-between pb-1 items-center">
+                        <span className="text-gray-600 dark:text-gray-400 text-sm flex items-center gap-2"><Info className="w-4 h-4" /> Theme</span>
+                        <span className="font-bold text-rose-500">{color}</span>
+                      </p>
+                    </div>
+                    <div className="mt-8">
+                      <p className="font-dancing text-3xl text-rose-600 dark:text-rose-400">Can&apos;t wait to celebrate with you!</p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="mt-8 bg-white/80 dark:bg-black/20 p-6 sm:p-8 rounded-[2rem] border border-rose-100 dark:border-white/10 shadow-lg shadow-rose-900/5 dark:shadow-none max-w-xl mx-auto backdrop-blur-sm relative overflow-hidden">
+
+              <button 
+                onClick={handleDownloadPDF}
+                className="mx-auto mt-4 py-3 px-8 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 rounded-full font-bold flex items-center justify-center gap-2 shadow-md transition-all hover:scale-105"
+              >
+                <Download className="w-5 h-5" />
+                Download Invitation PDF
+              </button>
+
+              <div className="mt-12 bg-white/80 dark:bg-black/20 p-6 sm:p-8 rounded-[2rem] border border-rose-100 dark:border-white/10 shadow-lg shadow-rose-900/5 dark:shadow-none max-w-xl mx-auto backdrop-blur-sm relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-rose-300 via-rose-400 to-rose-300" />
                 <h3 className="font-serif text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-                  One last thing...
+                  Send your RSVP...
                 </h3>
                 <p className="text-gray-600 dark:text-gray-300 text-sm mb-6">
-                  Write a cute little message to me below. It will be sent to my WhatsApp along with your RSVP so I know you&apos;ve locked it in! 
+                  Add a cute message for me! It will be sent straight to my WhatsApp along with your RSVP so I know you are ready! ❤️
                 </p>
                 <textarea 
                   value={customMessage}
                   onChange={(e) => setCustomMessage(e.target.value)}
-                  placeholder="I can't wait! ❤️"
-                  className="w-full p-4 rounded-xl border border-rose-100 dark:border-white/20 bg-white dark:bg-[#111218] focus:ring-2 focus:ring-rose-300 outline-none mb-6 min-h-[120px] text-gray-800 dark:text-gray-200 custom-scrollbar resize-none"
+                  placeholder="I can't wait! 🥰"
+                  className="w-full p-4 rounded-xl border border-rose-100 dark:border-white/20 bg-white dark:bg-[#111218] focus:ring-2 focus:ring-rose-300 outline-none mb-6 min-h-[100px] text-gray-800 dark:text-gray-200 custom-scrollbar resize-none"
                 />
                 <button 
                   onClick={handleWhatsAppSend}
                   className="w-full py-4 bg-[#25D366] hover:bg-[#128C7E] text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg transition-all hover:-translate-y-1"
                 >
                   <MessageCircle className="w-5 h-5" />
-                  Send RSVP to my WhatsApp
+                  Send to my WhatsApp
                 </button>
               </div>
             </motion.div>
           )}
-
         </AnimatePresence>
       </div>
 
