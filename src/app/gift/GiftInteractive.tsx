@@ -6,7 +6,7 @@ import { jsPDF } from 'jspdf'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Memory } from '@/data/initialData'
 import { fetchMemories } from '@/lib/storage'
-import { Check, X, MapPin, Clock, CalendarDays, Wallet, Info, MessageCircle, Download } from 'lucide-react'
+import { Check, X, MapPin, Clock, CalendarDays, Wallet, Info, MessageCircle, Download, Loader2 } from 'lucide-react'
 
 export default function GiftInteractive() {
   const [step, setStep] = useState(0)
@@ -18,6 +18,7 @@ export default function GiftInteractive() {
   // State for expanded place modal
   const [activePlace, setActivePlace] = useState<any | null>(null)
   const [customMessage, setCustomMessage] = useState('')
+  const [isDownloading, setIsDownloading] = useState(false)
   const ticketRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -45,19 +46,30 @@ export default function GiftInteractive() {
   }
 
   const handleDownloadPDF = async () => {
-    if (!ticketRef.current) return
+    if (!ticketRef.current || isDownloading) return
+    setIsDownloading(true)
     try {
-      const canvas = await html2canvas(ticketRef.current, { backgroundColor: null, scale: 2 })
+      // Small delay to let any button click effects clear
+      await new Promise(r => setTimeout(r, 100))
+
+      const canvas = await html2canvas(ticketRef.current, { 
+        backgroundColor: null, 
+        scale: 3,
+        useCORS: true
+      })
       const imgData = canvas.toDataURL('image/png')
       const pdf = new jsPDF({
-        orientation: 'landscape',
+        orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
         unit: 'px',
         format: [canvas.width, canvas.height]
       })
       pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height)
-      pdf.save('5-Year-Anniversary-Invitation.pdf')
+      pdf.save('5-Year-Anniversary-Ticket.pdf')
     } catch (e) {
       console.error("PDF generation failed", e)
+      alert("Failed to generate PDF. Please try again.")
+    } finally {
+      setIsDownloading(false)
     }
   }
 
@@ -385,33 +397,43 @@ export default function GiftInteractive() {
                 It&apos;s a Date!
               </h2>
               
-              {/* GLASS TICKET */}
-              <div className="relative p-1">
+              {/* ELEGANT GOLDEN TICKET */}
+              <div className="py-4">
                 <div 
                   ref={ticketRef} 
-                  className="relative w-full max-w-md mx-auto rounded-3xl overflow-hidden p-8 border border-white/60 dark:border-white/20 shadow-xl backdrop-blur-xl bg-white/30 dark:bg-black/40 mt-8"
+                  className="w-full max-w-lg mx-auto bg-gradient-to-br from-[#FFF9E6] to-[#FFF0C2] dark:from-[#1c1810] dark:to-[#0a0805] rounded-xl shadow-2xl p-2 relative overflow-hidden"
                 >
-                  <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-rose-200/40 to-purple-300/40 dark:from-rose-900/40 dark:to-purple-900/40 pointer-events-none" />
-                  <div className="relative z-10 text-center">
-                    <h3 className="font-serif text-3xl md:text-4xl font-bold text-rose-600 dark:text-rose-400 mb-1">5-Year Anniversary</h3>
-                    <p className="text-rose-800 dark:text-rose-200 font-medium tracking-[0.2em] uppercase text-xs mb-8">Official Invitation</p>
+                  {/* Outer Border */}
+                  <div className="border-[3px] border-[#D4AF37] border-double rounded-lg p-6 relative h-full flex flex-col justify-center">
                     
-                    <div className="space-y-4 text-left bg-white/50 dark:bg-black/50 p-6 rounded-2xl border border-white/60 dark:border-white/10 shadow-inner">
-                      <p className="flex justify-between border-b border-rose-200/50 dark:border-rose-900/50 pb-2 items-center">
-                        <span className="text-gray-600 dark:text-gray-400 text-sm flex items-center gap-2"><CalendarDays className="w-4 h-4" /> Date</span>
-                        <span className="font-bold text-gray-900 dark:text-white">{date}</span>
-                      </p>
-                      <p className="flex justify-between border-b border-rose-200/50 dark:border-rose-900/50 pb-2 items-center">
-                        <span className="text-gray-600 dark:text-gray-400 text-sm flex items-center gap-2"><MapPin className="w-4 h-4" /> Location</span>
-                        <span className="font-bold text-gray-900 dark:text-white text-right max-w-[60%] truncate">{place}</span>
-                      </p>
-                      <p className="flex justify-between pb-1 items-center">
-                        <span className="text-gray-600 dark:text-gray-400 text-sm flex items-center gap-2"><Info className="w-4 h-4" /> Theme</span>
-                        <span className="font-bold text-rose-500">{color}</span>
-                      </p>
+                    {/* Corner Decorations */}
+                    <div className="absolute top-2 left-2 w-4 h-4 border-t border-l border-[#D4AF37]" />
+                    <div className="absolute top-2 right-2 w-4 h-4 border-t border-r border-[#D4AF37]" />
+                    <div className="absolute bottom-2 left-2 w-4 h-4 border-b border-l border-[#D4AF37]" />
+                    <div className="absolute bottom-2 right-2 w-4 h-4 border-b border-r border-[#D4AF37]" />
+
+                    <div className="text-center space-y-2 mb-8 mt-2">
+                      <p className="tracking-[0.4em] uppercase text-[10px] text-[#A67C00] dark:text-[#D4AF37] font-bold">Admit One • VIP Access</p>
+                      <h3 className="font-serif text-3xl md:text-4xl text-[#D4AF37] font-bold">5-Year Anniversary</h3>
                     </div>
-                    <div className="mt-8">
-                      <p className="font-dancing text-3xl text-rose-600 dark:text-rose-400">Can&apos;t wait to celebrate with you!</p>
+
+                    <div className="space-y-5 bg-white/50 dark:bg-black/40 p-6 rounded-md border border-[#D4AF37]/30">
+                       <div className="flex justify-between items-end border-b border-[#D4AF37]/20 pb-3">
+                         <span className="text-xs uppercase tracking-widest text-[#8C6900] dark:text-[#D4AF37]/80">Date</span>
+                         <span className="font-serif font-bold text-gray-900 dark:text-gray-100 text-xl">{date}</span>
+                       </div>
+                       <div className="flex justify-between items-end border-b border-[#D4AF37]/20 pb-3">
+                         <span className="text-xs uppercase tracking-widest text-[#8C6900] dark:text-[#D4AF37]/80">Location</span>
+                         <span className="font-serif font-bold text-gray-900 dark:text-gray-100 text-xl text-right max-w-[65%]">{place}</span>
+                       </div>
+                       <div className="flex justify-between items-end pb-1">
+                         <span className="text-xs uppercase tracking-widest text-[#8C6900] dark:text-[#D4AF37]/80">Dress Theme</span>
+                         <span className="font-serif font-bold text-[#D4AF37] text-xl">{color}</span>
+                       </div>
+                    </div>
+
+                    <div className="mt-10 mb-2 text-center">
+                      <p className="font-dancing text-4xl text-[#A67C00] dark:text-[#D4AF37]">I can&apos;t wait to celebrate with you!</p>
                     </div>
                   </div>
                 </div>
@@ -419,10 +441,11 @@ export default function GiftInteractive() {
 
               <button 
                 onClick={handleDownloadPDF}
-                className="mx-auto mt-4 py-3 px-8 bg-gray-900 dark:bg-white hover:bg-gray-800 dark:hover:bg-gray-100 text-white dark:text-gray-900 rounded-full font-bold flex items-center justify-center gap-2 shadow-md transition-all hover:scale-105"
+                disabled={isDownloading}
+                className="mx-auto mt-6 py-4 px-10 bg-gradient-to-r from-[#D4AF37] to-[#A67C00] hover:from-[#C5A059] hover:to-[#8C6900] text-white rounded-full font-bold flex items-center justify-center gap-2 shadow-xl transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed"
               >
-                <Download className="w-5 h-5" />
-                Download Invitation PDF
+                {isDownloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                {isDownloading ? "Generating PDF..." : "Download VIP Ticket (PDF)"}
               </button>
 
               <div className="mt-12 bg-white/80 dark:bg-black/20 p-6 sm:p-8 rounded-[2rem] border border-rose-100 dark:border-white/10 shadow-lg shadow-rose-900/5 dark:shadow-none max-w-xl mx-auto backdrop-blur-sm relative overflow-hidden">
