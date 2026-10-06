@@ -1,24 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { fetchMemories, setSessionAuthorized } from '@/lib/storage'
+import { fetchMemories, fetchLetters, setSessionAuthorized } from '@/lib/storage'
 import MemoriesGallery from './MemoriesGallery'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Heart, LockOpen } from 'lucide-react'
 import { Memory } from '@/data/initialData'
 
-// The Love Letter Configuration
-const letterParts = [
-  { type: 'text', content: "To my dearest " },
-  { type: 'input', id: 'blank1', placeholder: "pet name", answer: "baby" }, // Change this answer!
-  { type: 'text', content: ",\n\nFrom the very first time we went to " },
-  { type: 'input', id: 'blank2', placeholder: "place", answer: "colombo" }, // Change this answer!
-  { type: 'text', content: ", I knew you were someone special. I absolutely love your " },
-  { type: 'input', id: 'blank3', placeholder: "feature", answer: "smile" }, // Change this answer!
-  { type: 'text', content: " and how you always make my days brighter. I can't wait to spend " },
-  { type: 'input', id: 'blank4', placeholder: "time", answer: "forever" }, // Change this answer!
-  { type: 'text', content: " with you.\n\nYours always." }
-]
+const DEFAULT_LETTER_TEXT = `To my dearest [pet name|baby],
+
+From the very first time we went to [place|colombo], I knew you were someone special. I absolutely love your [feature|smile] and how you always make my days brighter. I can't wait to spend [time|forever] with you.
+
+Yours always.`
 
 export default function MemoriesContainer() {
   const [memories, setMemories] = useState<Memory[] | null>(null)
@@ -26,23 +19,54 @@ export default function MemoriesContainer() {
   const [loading, setLoading] = useState(false)
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [shake, setShake] = useState(false)
+  const [letterParts, setLetterParts] = useState<any[]>([])
 
-  // Force reset state whenever this page is visited/mounted
   useEffect(() => {
     setMemories(null)
     setError('')
+    
+    // Fetch letter config
+    async function loadLetter() {
+      const letters = await fetchLetters()
+      const lockLetter = letters.find(l => l.title === '[LOCK_LETTER]')
+      const rawText = lockLetter ? lockLetter.content : DEFAULT_LETTER_TEXT
+      
+      const regex = /\[([^\|]+)\|([^\]]+)\]/g
+      let lastIndex = 0
+      const parts = []
+      let match
+      let blankCount = 1
+
+      while ((match = regex.exec(rawText)) !== null) {
+        if (match.index > lastIndex) {
+          parts.push({ type: 'text', content: rawText.substring(lastIndex, match.index) })
+        }
+        parts.push({ 
+          type: 'input', 
+          id: `blank${blankCount++}`, 
+          placeholder: match[1].trim(), 
+          answer: match[2].trim() 
+        })
+        lastIndex = regex.lastIndex
+      }
+      if (lastIndex < rawText.length) {
+        parts.push({ type: 'text', content: rawText.substring(lastIndex) })
+      }
+      setLetterParts(parts)
+    }
+    
+    loadLetter()
   }, [])
 
   async function handleUnlock() {
     setError('')
     setLoading(true)
     
-    // Check if all answers are correct (case-insensitive, ignoring surrounding spaces)
     let allCorrect = true
     letterParts.forEach(part => {
       if (part.type === 'input') {
-        const userAnswer = (answers[part.id as string] || '').toLowerCase().trim()
-        const correctAnswer = part.answer?.toLowerCase().trim()
+        const userAnswer = (answers[part.id] || '').toLowerCase().trim()
+        const correctAnswer = (part.answer || '').toLowerCase().trim()
         if (userAnswer !== correctAnswer) {
           allCorrect = false
         }
@@ -78,6 +102,10 @@ export default function MemoriesContainer() {
     )
   }
 
+  if (letterParts.length === 0) {
+    return <div className="min-h-screen bg-[#FDFBF7]" />
+  }
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -109,10 +137,10 @@ export default function MemoriesContainer() {
                   key={part.id}
                   type="text"
                   placeholder={part.placeholder}
-                  value={answers[part.id as string] || ''}
+                  value={answers[part.id] || ''}
                   onChange={(e) => {
                     setError('')
-                    setAnswers(prev => ({ ...prev, [part.id as string]: e.target.value }))
+                    setAnswers(prev => ({ ...prev, [part.id]: e.target.value }))
                   }}
                   className={`inline-block mx-2 border-b-2 bg-rose-50/50 text-center text-rose-600 font-bold focus:outline-none focus:bg-rose-100 transition-colors w-28 md:w-32 rounded-t-md px-2 py-1 ${error ? 'border-red-400' : 'border-rose-300 focus:border-rose-500'}`}
                 />
