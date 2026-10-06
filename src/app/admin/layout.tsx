@@ -34,7 +34,13 @@ create policy "public_read_letters" on letters for select using (true);
 create policy "public_write_letters" on letters for all using (true) with check (true);
 
 create policy "public_read_memories" on memories for select using (true);
-create policy "public_write_memories" on memories for all using (true) with check (true);`
+create policy "public_write_memories" on memories for all using (true) with check (true);
+
+-- Create storage bucket and policies
+insert into storage.buckets (id, name, public) values ('memories', 'memories', true) on conflict do nothing;
+create policy "public_read_storage" on storage.objects for select using (bucket_id = 'memories');
+create policy "public_write_storage" on storage.objects for insert with check (bucket_id = 'memories');
+create policy "public_delete_storage" on storage.objects for delete using (bucket_id = 'memories');`
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [authorized, setAuthorized] = useState<boolean | null>(null)
