@@ -36,7 +36,7 @@ export default function MemoriesGallery({ memories }: { memories: Memory[] }) {
           </motion.div>
         ))}
         {memories.length === 0 && (
-          <div className="col-span-full text-center py-20 text-gray-400 font-light break-inside-avoid">
+          <div className="col-span-full text-center py-20 text-gray-400 dark:text-gray-500 font-light break-inside-avoid">
             No memories uploaded yet.
           </div>
         )}

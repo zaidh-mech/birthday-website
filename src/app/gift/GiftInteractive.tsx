@@ -179,14 +179,14 @@ export default function GiftInteractive() {
           
           {step === 0 && (
             <motion.div key="step0" variants={variants} initial="initial" animate="animate" exit="exit" className="text-center space-y-8 w-full px-4">
-              <h2 className="font-serif text-3xl md:text-5xl font-bold text-gray-900">
+              <h2 className="font-serif text-3xl md:text-5xl font-bold text-gray-900 dark:text-gray-100">
                 May I take you out on a date with me?
               </h2>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
                 <button onClick={handleYes} className="w-full sm:w-auto px-10 py-4 bg-rose-400 text-white rounded-full font-medium hover:bg-rose-500 hover:scale-105 transition-all shadow-md">
                   Yes!
                 </button>
-                <button onClick={handleNo1} className="w-full sm:w-auto px-10 py-4 bg-gray-100 text-gray-600 rounded-full font-medium hover:bg-gray-200 transition-colors">
+                <button onClick={handleNo1} className="w-full sm:w-auto px-10 py-4 bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 rounded-full font-medium hover:bg-gray-200 transition-colors">
                   No
                 </button>
               </div>
@@ -195,7 +195,7 @@ export default function GiftInteractive() {
 
           {step === 1 && (
             <motion.div key="step1" variants={variants} initial="initial" animate="animate" exit="exit" className="text-center space-y-8 w-full px-4">
-              <h2 className="font-serif text-3xl md:text-4xl font-bold text-gray-900 leading-snug">
+              <h2 className="font-serif text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 leading-snug">
                 Oh come on, you know you want to! 🙄<br/>
                 <span className="text-rose-400">But I really want to take you...</span> so will you come please?
               </h2>
@@ -203,7 +203,7 @@ export default function GiftInteractive() {
                 <button onClick={handleYes} className="w-full sm:w-auto px-10 py-4 bg-rose-400 text-white rounded-full font-medium hover:bg-rose-500 hover:scale-105 transition-all shadow-md">
                   Fine, Yes!
                 </button>
-                <button onClick={handleNo2} className="w-full sm:w-auto px-10 py-4 bg-gray-100 text-gray-600 rounded-full font-medium hover:bg-gray-200 transition-colors">
+                <button onClick={handleNo2} className="w-full sm:w-auto px-10 py-4 bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-gray-300 rounded-full font-medium hover:bg-gray-200 transition-colors">
                   Still No
                 </button>
               </div>
@@ -219,10 +219,10 @@ export default function GiftInteractive() {
                   <span className="text-rose-400 font-medium px-4 text-center">Admin: Please upload cute fella photo</span>
                 </div>
               )}
-              <h2 className="font-serif text-2xl md:text-3xl font-bold text-gray-900 leading-snug">
+              <h2 className="font-serif text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100 leading-snug">
                 Won't you change your mind for this cute fella? 🥺
               </h2>
-              <p className="text-gray-500 italic max-w-md mx-auto">
+              <p className="text-gray-500 dark:text-gray-400 italic max-w-md mx-auto">
                 I know you won't say no for this, that is why "No" is not an option now.
               </p>
               <div className="flex items-center justify-center gap-6 pt-4 w-full sm:w-auto">
@@ -234,11 +234,11 @@ export default function GiftInteractive() {
           )}
 
           {step === 3 && (
-            <motion.div key="step3" variants={variants} initial="initial" animate="animate" exit="exit" className="text-center space-y-8 w-full px-4 bg-white/60 backdrop-blur-md p-8 rounded-3xl border border-rose-100 shadow-sm max-w-2xl mx-auto">
-              <h2 className="font-serif text-3xl font-bold text-gray-900">
+            <motion.div key="step3" variants={variants} initial="initial" animate="animate" exit="exit" className="text-center space-y-8 w-full px-4 bg-white/60 dark:bg-white/10 backdrop-blur-md p-8 rounded-3xl border border-rose-100 dark:border-white/10 shadow-sm max-w-2xl mx-auto">
+              <h2 className="font-serif text-3xl font-bold text-gray-900 dark:text-gray-100">
                 Give me a date that you want to enjoy your day with me!
               </h2>
-              <p className="text-gray-600 font-medium">
+              <p className="text-gray-600 dark:text-gray-300 font-medium">
                 If a weekday is the plan, inform beforehand so 'your babyboy' can take a leave. <br/>
                 <span className="text-rose-400 italic">But if it's weekend, it's fineeee!</span>
               </p>
@@ -247,7 +247,7 @@ export default function GiftInteractive() {
                 type="date" 
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full max-w-xs p-4 rounded-xl border border-gray-200 bg-white/80 focus:outline-none focus:ring-2 focus:ring-rose-300 text-center font-medium"
+                className="w-full max-w-xs p-4 rounded-xl border border-gray-200 dark:border-white/10 bg-white/80 dark:bg-white/5 focus:outline-none focus:ring-2 focus:ring-rose-300 text-center font-medium"
               />
 
               <div>
@@ -264,10 +264,10 @@ export default function GiftInteractive() {
 
           {step === 4 && (
             <motion.div key="step4" variants={variants} initial="initial" animate="animate" exit="exit" className="text-center space-y-8 w-full px-4">
-              <h2 className="font-serif text-3xl font-bold text-gray-900">
+              <h2 className="font-serif text-3xl font-bold text-gray-900 dark:text-gray-100">
                 Before moving to the 'where'...
               </h2>
-              <p className="text-gray-600 font-medium text-lg">
+              <p className="text-gray-600 dark:text-gray-300 font-medium text-lg">
                 Choose a colour. <span className="text-rose-400 italic">It's a secret.</span> 🤫
               </p>
               
@@ -297,10 +297,10 @@ export default function GiftInteractive() {
           {step === 5 && (
             <motion.div key="step5" variants={variants} initial="initial" animate="animate" exit="exit" className="w-full">
               <div className="text-center mb-10 px-4">
-                <h2 className="font-serif text-3xl md:text-5xl font-bold text-gray-900 mb-4">
+                <h2 className="font-serif text-3xl md:text-5xl font-bold text-gray-900 dark:text-gray-100 mb-4">
                   Where should I take you?
                 </h2>
-                <p className="text-gray-600 font-medium max-w-lg mx-auto">
+                <p className="text-gray-600 dark:text-gray-300 font-medium max-w-lg mx-auto">
                   I've picked out a few perfect spots for us. Tap on any card to explore the vibe, check the ambiance, and select your favorite!
                 </p>
               </div>
@@ -347,13 +347,13 @@ export default function GiftInteractive() {
           {step === 6 && (
             <motion.div key="step6" variants={variants} initial="initial" animate="animate" exit="exit" className="text-center space-y-6 w-full px-4">
               <div className="text-6xl animate-bounce mb-4">🎉</div>
-              <h2 className="font-serif text-4xl md:text-5xl font-bold text-gray-900">
+              <h2 className="font-serif text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100">
                 It's a Date!
               </h2>
-              <div className="text-gray-600 text-lg space-y-3 bg-white/60 p-8 rounded-3xl border border-rose-100 inline-block text-left shadow-sm mt-8">
-                <p className="flex items-center gap-3"><CalendarDays className="w-5 h-5 text-rose-400" /> <strong className="text-gray-900">Date:</strong> {date}</p>
-                <p className="flex items-center gap-3"><MapPin className="w-5 h-5 text-rose-400" /> <strong className="text-gray-900">Location:</strong> {place}</p>
-                <p className="flex items-center gap-3"><Info className="w-5 h-5 text-rose-400" /> <strong className="text-gray-900">Secret Theme:</strong> {color}</p>
+              <div className="text-gray-600 dark:text-gray-300 text-lg space-y-3 bg-white/60 dark:bg-white/10 p-8 rounded-3xl border border-rose-100 dark:border-white/10 inline-block text-left shadow-sm mt-8">
+                <p className="flex items-center gap-3"><CalendarDays className="w-5 h-5 text-rose-400" /> <strong className="text-gray-900 dark:text-gray-100">Date:</strong> {date}</p>
+                <p className="flex items-center gap-3"><MapPin className="w-5 h-5 text-rose-400" /> <strong className="text-gray-900 dark:text-gray-100">Location:</strong> {place}</p>
+                <p className="flex items-center gap-3"><Info className="w-5 h-5 text-rose-400" /> <strong className="text-gray-900 dark:text-gray-100">Secret Theme:</strong> {color}</p>
               </div>
               <p className="text-rose-500 font-medium text-xl mt-8 max-w-md mx-auto leading-relaxed">
                 I've locked in the details. I can't wait to spend the day with you and make you feel as special as you are! ❤️

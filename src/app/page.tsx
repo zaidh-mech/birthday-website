@@ -56,7 +56,7 @@ export default function Home() {
 
         <motion.div 
           variants={itemVars}
-          className="pt-8 text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-4 transition-colors duration-1000 text-gray-400 dark:text-gray-500"
+          className="pt-8 text-xs uppercase tracking-[0.3em] flex items-center justify-center gap-4 transition-colors duration-1000 text-gray-400 dark:text-gray-500 dark:text-gray-400"
         >
           <span className="w-12 h-px transition-colors duration-1000 bg-gray-200 dark:bg-gray-700" />
           Explore the chapters above

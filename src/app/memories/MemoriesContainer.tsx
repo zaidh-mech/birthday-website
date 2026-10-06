@@ -94,8 +94,8 @@ export default function MemoriesContainer() {
     return (
       <div className="w-full max-w-6xl mx-auto p-6 pt-32 pb-24">
         <div className="text-center mb-16 space-y-4">
-          <h1 className="font-serif text-4xl md:text-5xl font-bold text-gray-900">Our Memories</h1>
-          <p className="font-sans text-gray-500 font-light">Snapshots of our time together.</p>
+          <h1 className="font-serif text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100">Our Memories</h1>
+          <p className="font-sans text-gray-500 dark:text-gray-400 font-light">Snapshots of our time together.</p>
         </div>
         <MemoriesGallery memories={memories} />
       </div>
@@ -110,23 +110,23 @@ export default function MemoriesContainer() {
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-2xl bg-[#FDFBF7] p-8 md:p-12 rounded-[2rem] shadow-lg shadow-rose-900/5 border border-rose-100 text-center mx-6 relative overflow-hidden"
+      className="w-full max-w-2xl bg-[#FDFBF7] dark:bg-[#111218] p-8 md:p-12 rounded-[2rem] shadow-lg shadow-rose-900/5 dark:shadow-none border border-rose-100 dark:border-white/10 text-center mx-6 relative overflow-hidden transition-colors duration-1000"
     >
       {/* Decorative corner accents */}
-      <div className="absolute top-0 left-0 w-24 h-24 bg-rose-100 rounded-br-[100px] opacity-50" />
-      <div className="absolute bottom-0 right-0 w-32 h-32 bg-rose-50 rounded-tl-[100px] opacity-50" />
+      <div className="absolute top-0 left-0 w-24 h-24 bg-rose-100 dark:bg-white/5 rounded-br-[100px] opacity-50 transition-colors" />
+      <div className="absolute bottom-0 right-0 w-32 h-32 bg-rose-50 dark:bg-white/5 rounded-tl-[100px] opacity-50 transition-colors" />
 
       <div className="relative z-10">
-        <div className="w-14 h-14 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
-          <Heart className="w-6 h-6 text-rose-500 fill-rose-500/20" />
+        <div className="w-14 h-14 bg-rose-100 dark:bg-rose-500/20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner transition-colors">
+          <Heart className="w-6 h-6 text-rose-500 dark:text-rose-400 fill-rose-500/20" />
         </div>
-        <h2 className="font-serif text-3xl font-bold text-gray-900 mb-2">A Letter for You</h2>
+        <h2 className="font-serif text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">A Letter for You</h2>
         <p className="text-sm text-rose-400 mb-10 font-medium tracking-wide uppercase">Fill in the blanks to unlock our memories</p>
         
         <motion.div 
           animate={shake ? { x: [-10, 10, -10, 10, 0] } : {}}
           transition={{ duration: 0.4 }}
-          className="text-left font-serif text-lg md:text-xl text-gray-800 leading-loose bg-white/60 p-6 md:p-8 rounded-2xl border border-rose-50/50 shadow-sm backdrop-blur-sm"
+          className="text-left font-serif text-lg md:text-xl text-gray-800 dark:text-gray-200 leading-loose bg-white/60 dark:bg-white/10 p-6 md:p-8 rounded-2xl border border-rose-50/50 dark:border-white/10 shadow-sm backdrop-blur-sm transition-colors duration-1000"
         >
           {letterParts.map((part, index) => {
             if (part.type === 'text') {
@@ -142,7 +142,7 @@ export default function MemoriesContainer() {
                     setError('')
                     setAnswers(prev => ({ ...prev, [part.id]: e.target.value }))
                   }}
-                  className={`inline-block mx-2 border-b-2 bg-rose-50/50 text-center text-rose-600 font-bold focus:outline-none focus:bg-rose-100 transition-colors w-28 md:w-32 rounded-t-md px-2 py-1 ${error ? 'border-red-400' : 'border-rose-300 focus:border-rose-500'}`}
+                  className={`inline-block mx-2 border-b-2 bg-rose-50/50 dark:bg-white/10 text-center text-rose-600 dark:text-purple-300 font-bold focus:outline-none focus:bg-rose-100 dark:focus:bg-white/20 transition-colors w-28 md:w-32 rounded-t-md px-2 py-1 placeholder:text-gray-400 dark:placeholder:text-gray-500 ${error ? 'border-red-400' : 'border-rose-300 dark:border-purple-400 focus:border-rose-500 dark:focus:border-purple-300'}`}
                 />
               )
             }

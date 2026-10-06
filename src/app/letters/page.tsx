@@ -19,8 +19,8 @@ export default function LettersPage() {
   return (
     <main className="flex-1 max-w-4xl w-full mx-auto p-6 pt-32 pb-24">
       <div className="text-center mb-16 space-y-4">
-        <h1 className="font-serif text-4xl md:text-5xl font-bold text-gray-900">Letters for You</h1>
-        <p className="font-sans text-gray-500 font-light">Words I wrote when I was thinking of you.</p>
+        <h1 className="font-serif text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100">Letters for You</h1>
+        <p className="font-sans text-gray-500 dark:text-gray-400 font-light">Words I wrote when I was thinking of you.</p>
       </div>
       
       {loaded && <LettersClient letters={letters} />}
