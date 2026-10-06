@@ -97,6 +97,45 @@ export async function createLetter(letter: { title: string; content: string; occ
   return newLetter
 }
 
+export async function updateLetter(id: string, updates: { title: string; content: string; occasion: string }): Promise<Letter> {
+  const supabase = getSupabaseClient()
+  
+  if (supabase) {
+    try {
+      await supabase
+        .from('letters')
+        .update({
+          title: updates.title,
+          content: updates.content,
+          occasion: updates.occasion,
+        })
+        .eq('id', id)
+    } catch (e) {
+      console.warn('Supabase update letter failed:', e)
+    }
+  }
+
+  const local = getLocalLetters()
+  const letterIndex = local.findIndex((l) => l.id === id)
+  let updatedLetter: Letter
+
+  if (letterIndex !== -1) {
+    updatedLetter = {
+      ...local[letterIndex],
+      ...updates,
+    }
+    local[letterIndex] = updatedLetter
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(LETTERS_KEY, JSON.stringify(local))
+    }
+  } else {
+    // Fallback if not found locally
+    updatedLetter = { id, date: new Date().toISOString(), ...updates }
+  }
+
+  return updatedLetter
+}
+
 export async function removeLetter(id: string): Promise<void> {
   const supabase = getSupabaseClient()
   if (supabase) {
