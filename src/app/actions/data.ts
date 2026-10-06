@@ -5,6 +5,7 @@ import { checkAdmin } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { writeFile, mkdir } from 'fs/promises'
 import path from 'path'
+import { isSupabaseConfigured, uploadImageToSupabase } from '@/lib/supabase'
 
 export async function createLetter(formData: FormData) {
   if (!(await checkAdmin())) throw new Error('Unauthorized')
@@ -35,23 +36,30 @@ export async function createMemory(formData: FormData) {
 
   if (!file) throw new Error('File is required')
 
-  const bytes = await file.arrayBuffer()
-  const buffer = Buffer.from(bytes)
+  let imagePath = ''
 
-  const uploadDir = path.join(process.cwd(), 'public/uploads')
-  try {
-    await mkdir(uploadDir, { recursive: true })
-  } catch (e) {}
+  if (isSupabaseConfigured) {
+    imagePath = await uploadImageToSupabase(file)
+  } else {
+    const bytes = await file.arrayBuffer()
+    const buffer = Buffer.from(bytes)
 
-  const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '-')}`
-  const filepath = path.join(uploadDir, filename)
-  await writeFile(filepath, buffer)
+    const uploadDir = path.join(process.cwd(), 'public/uploads')
+    try {
+      await mkdir(uploadDir, { recursive: true })
+    } catch (e) {}
+
+    const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '-')}`
+    const filepath = path.join(uploadDir, filename)
+    await writeFile(filepath, buffer)
+    imagePath = `/uploads/${filename}`
+  }
 
   await prisma.memory.create({
     data: {
       title,
       caption,
-      imagePath: `/uploads/${filename}`
+      imagePath,
     }
   })
 
