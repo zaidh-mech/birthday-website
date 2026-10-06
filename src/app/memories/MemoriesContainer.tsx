@@ -103,15 +103,16 @@ export default function MemoriesContainer() {
   }
 
   if (letterParts.length === 0) {
-    return <div className="min-h-screen bg-[#FDFBF7]" />
+    return <div className="min-h-screen bg-transparent" />
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-2xl bg-[#FDFBF7] dark:bg-[#111218] p-8 md:p-12 rounded-[2rem] shadow-lg shadow-rose-900/5 dark:shadow-none border border-rose-100 dark:border-white/10 text-center mx-6 relative overflow-hidden transition-colors duration-1000"
-    >
+    <div className="flex-1 flex flex-col items-center justify-center w-full pt-32 pb-24">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-2xl bg-[#FDFBF7] dark:bg-[#111218] p-8 md:p-12 rounded-[2rem] shadow-lg shadow-rose-900/5 dark:shadow-none border border-rose-100 dark:border-white/10 text-center mx-6 relative overflow-hidden transition-colors duration-1000"
+      >
       {/* Decorative corner accents */}
       <div className="absolute top-0 left-0 w-24 h-24 bg-rose-100 dark:bg-white/5 rounded-br-[100px] opacity-50 transition-colors" />
       <div className="absolute bottom-0 right-0 w-32 h-32 bg-rose-50 dark:bg-white/5 rounded-tl-[100px] opacity-50 transition-colors" />
@@ -176,5 +177,6 @@ export default function MemoriesContainer() {
         </button>
       </div>
     </motion.div>
+    </div>
   )
 }
