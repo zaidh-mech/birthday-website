@@ -39,7 +39,7 @@ export default function Home() {
         <motion.h1 variants={itemVars} className="font-serif text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight leading-none transition-colors duration-1000 text-gray-900 dark:text-gray-100">
           Happy 5 Years,<br />
           & Happy Birthday <br />
-          <span className="font-dancing font-normal pr-4 transition-colors duration-1000 text-rose-400 dark:text-purple-300">my everything.</span>
+          <span className="font-cursive font-normal pr-4 transition-colors duration-1000 text-rose-400 dark:text-purple-300">my everything.</span>
         </motion.h1>
         
         <motion.p variants={itemVars} className="font-sans text-xl md:text-2xl leading-relaxed font-light max-w-2xl mx-auto transition-colors duration-1000 text-gray-600 dark:text-gray-300">

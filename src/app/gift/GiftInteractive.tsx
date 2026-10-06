@@ -444,7 +444,7 @@ export default function GiftInteractive() {
                     </div>
 
                     <div className="mt-10 mb-2 text-center">
-                      <p className="font-dancing text-4xl text-[#A67C00] dark:text-[#D4AF37]">I can&apos;t wait to celebrate with you!</p>
+                      <p className="font-cursive text-4xl text-[#A67C00] dark:text-[#D4AF37]">I can&apos;t wait to celebrate with you!</p>
                     </div>
                   </div>
                 </div>
