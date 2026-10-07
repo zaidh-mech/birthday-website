@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
-import { format } from 'date-fns'
 import { X } from 'lucide-react'
 
 import { Memory } from '@/data/initialData'
@@ -31,8 +30,7 @@ export default function MemoriesGallery({ memories }: { memories: Memory[] }) {
             
             <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
               <h3 className="text-white font-serif text-xl font-bold">{memory.title}</h3>
-              <p className="text-white/80 text-sm">{format(new Date(memory.date), 'MMMM yyyy')}</p>
-            </div>
+              </div>
           </motion.div>
         ))}
         {memories.length === 0 && (
@@ -72,9 +70,6 @@ export default function MemoriesGallery({ memories }: { memories: Memory[] }) {
               </div>
 
               <div className="w-full md:w-2/5 text-white space-y-4">
-                <p className="text-rose-300 text-sm uppercase tracking-widest font-semibold">
-                  {format(new Date(selectedMemory.date), 'MMMM do, yyyy')}
-                </p>
                 <h2 className="font-serif text-3xl md:text-4xl font-bold">{selectedMemory.title}</h2>
                 <div className="h-px w-12 bg-white/20" />
                 <p className="text-lg font-light text-white/90 leading-relaxed italic">
