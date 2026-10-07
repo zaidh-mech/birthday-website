@@ -305,3 +305,51 @@ export function exportAllData(): string {
   }
   return JSON.stringify(data, null, 2)
 }
+
+
+export async function updateMemory(id: string, updates: { title: string; caption: string; imagePath?: string; file?: File | null }): Promise<Memory> {
+  const supabase = getSupabaseClient()
+  let finalImagePath = updates.imagePath
+  
+  if (updates.file && supabase) {
+    try {
+      finalImagePath = await uploadImageToSupabase(updates.file)
+    } catch (e) {
+      console.warn('Upload image to Supabase failed during update:', e)
+    }
+  }
+
+  if (supabase) {
+    try {
+      const updateData: any = {
+        title: updates.title,
+        caption: updates.caption,
+      }
+      if (finalImagePath) updateData.image_path = finalImagePath
+
+      await supabase
+        .from('memories')
+        .update(updateData)
+        .eq('id', id)
+    } catch (e) {
+      console.warn('Supabase update memory failed:', e)
+    }
+  }
+
+  let updatedMemory: Memory | null = null
+  if (typeof window !== 'undefined') {
+    const local = getLocalMemories()
+    const updated = local.map(m => {
+      if (m.id === id) {
+        updatedMemory = { ...m, title: updates.title, caption: updates.caption }
+        if (finalImagePath) updatedMemory.imagePath = finalImagePath
+        return updatedMemory
+      }
+      return m
+    })
+    localStorage.setItem(MEMORIES_KEY, JSON.stringify(updated))
+  }
+  
+  if (!updatedMemory) throw new Error("Memory not found locally")
+  return updatedMemory
+}

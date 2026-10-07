@@ -1,11 +1,11 @@
 'use client'
 
-import { useRef, useState } from 'react'
-import { createMemory } from '@/lib/storage'
+import { useRef, useState, useEffect } from 'react'
+import { createMemory, updateMemory } from '@/lib/storage'
 import { Memory } from '@/data/initialData'
 import { Upload, Link as LinkIcon, Image as ImageIcon } from 'lucide-react'
 
-export default function UploadForm({ onMemorySaved }: { onMemorySaved: (memory: Memory) => void }) {
+export default function UploadForm({ onMemorySaved, editMemory, onCancelEdit }: { onMemorySaved: (memory: Memory) => void, editMemory?: Memory | null, onCancelEdit?: () => void }) {
   const formRef = useRef<HTMLFormElement>(null)
   const [title, setTitle] = useState('')
   const [caption, setCaption] = useState('')
@@ -14,6 +14,29 @@ export default function UploadForm({ onMemorySaved }: { onMemorySaved: (memory: 
   const [imageUrlInput, setImageUrlInput] = useState('')
   const [useUrlMode, setUseUrlMode] = useState(false)
   const [uploading, setUploading] = useState(false)
+
+  useEffect(() => {
+    if (editMemory) {
+      setTitle(editMemory.title)
+      setCaption(editMemory.caption)
+      setPreview(editMemory.imagePath)
+      if (editMemory.imagePath && editMemory.imagePath.startsWith('http')) {
+        setUseUrlMode(true)
+        setImageUrlInput(editMemory.imagePath)
+      } else {
+        setUseUrlMode(false)
+        setImageUrlInput('')
+      }
+      setSelectedFile(null)
+    } else {
+      setTitle('')
+      setCaption('')
+      setPreview(null)
+      setImageUrlInput('')
+      setUseUrlMode(false)
+      setSelectedFile(null)
+    }
+  }, [editMemory])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -26,7 +49,7 @@ export default function UploadForm({ onMemorySaved }: { onMemorySaved: (memory: 
       reader.readAsDataURL(file)
     } else {
       setSelectedFile(null)
-      setPreview(null)
+      setPreview(editMemory?.imagePath || null)
     }
   }
 
@@ -41,7 +64,7 @@ export default function UploadForm({ onMemorySaved }: { onMemorySaved: (memory: 
       alert('Please select a photo to upload.')
       return
     }
-    if (useUrlMode && !imageUrlInput) {
+    if (useUrlMode && !imageUrlInput && !preview) {
       alert('Please enter a photo URL.')
       return
     }
@@ -52,20 +75,34 @@ export default function UploadForm({ onMemorySaved }: { onMemorySaved: (memory: 
 
     setUploading(true)
     try {
-      const newMemory = await createMemory({
-        title,
-        caption,
-        imagePath: useUrlMode ? imageUrlInput : preview || undefined,
-        file: useUrlMode ? null : selectedFile,
-      })
+      let savedMemory: Memory;
+      
+      if (editMemory) {
+        savedMemory = await updateMemory(editMemory.id, {
+          title,
+          caption,
+          imagePath: useUrlMode ? imageUrlInput : preview || undefined,
+          file: useUrlMode ? null : selectedFile,
+        })
+      } else {
+        savedMemory = await createMemory({
+          title,
+          caption,
+          imagePath: useUrlMode ? imageUrlInput : preview || undefined,
+          file: useUrlMode ? null : selectedFile,
+        })
+      }
 
-      onMemorySaved(newMemory)
-      setTitle('')
-      setCaption('')
-      setPreview(null)
-      setSelectedFile(null)
-      setImageUrlInput('')
-      formRef.current?.reset()
+      onMemorySaved(savedMemory)
+      
+      if (!editMemory) {
+        setTitle('')
+        setCaption('')
+        setPreview(null)
+        setSelectedFile(null)
+        setImageUrlInput('')
+        formRef.current?.reset()
+      }
     } catch (err: any) {
       console.error(err)
       alert('Error saving memory: ' + (err.message || 'Unknown error'))
@@ -84,7 +121,7 @@ export default function UploadForm({ onMemorySaved }: { onMemorySaved: (memory: 
             !useUrlMode ? 'text-rose-600 border-b-2 border-rose-600' : 'text-gray-400 hover:text-gray-600'
           }`}
         >
-          <Upload className="w-3.5 h-3.5" /> Upload File (Cloud / Local)
+          <Upload className="w-3.5 h-3.5" /> {editMemory ? 'Change File' : 'Upload File'}
         </button>
         <button
           type="button"
@@ -122,7 +159,7 @@ export default function UploadForm({ onMemorySaved }: { onMemorySaved: (memory: 
               value={imageUrlInput}
               onChange={handleUrlChange}
               placeholder="Paste direct image URL (https://...)" 
-              required 
+              required={!editMemory}
               className="px-4 py-2.5 border border-gray-200 rounded-xl w-full text-sm focus:outline-none focus:ring-2 focus:ring-rose-200" 
             />
           ) : (
@@ -138,7 +175,7 @@ export default function UploadForm({ onMemorySaved }: { onMemorySaved: (memory: 
           )}
         </div>
         
-        <div className="bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-center overflow-hidden min-h-[160px] md:h-auto">
+        <div className="bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-center overflow-hidden min-h-[160px] md:h-auto relative">
           {preview ? (
             <img src={preview} alt="Preview" className="w-full h-full max-h-60 object-cover" />
           ) : (
@@ -150,13 +187,25 @@ export default function UploadForm({ onMemorySaved }: { onMemorySaved: (memory: 
         </div>
       </div>
       
-      <button 
-        type="submit" 
-        disabled={uploading}
-        className="bg-gray-900 text-white px-6 py-2.5 rounded-xl font-medium text-sm hover:bg-gray-800 transition-colors disabled:opacity-50"
-      >
-        {uploading ? 'Uploading to Cloud...' : 'Save Memory'}
-      </button>
+      <div className="flex gap-3 pt-2">
+        <button 
+          type="submit" 
+          disabled={uploading}
+          className="bg-gray-900 text-white px-6 py-2.5 rounded-xl font-medium text-sm hover:bg-gray-800 transition-colors disabled:opacity-50"
+        >
+          {uploading ? 'Saving...' : (editMemory ? 'Update Memory' : 'Save Memory')}
+        </button>
+        {editMemory && onCancelEdit && (
+          <button 
+            type="button" 
+            onClick={onCancelEdit}
+            disabled={uploading}
+            className="bg-gray-100 text-gray-700 px-6 py-2.5 rounded-xl font-medium text-sm hover:bg-gray-200 transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+        )}
+      </div>
     </form>
   )
 }

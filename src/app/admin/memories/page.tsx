@@ -5,17 +5,25 @@ import { fetchMemories, removeMemory } from '@/lib/storage'
 import { Memory } from '@/data/initialData'
 import { format } from 'date-fns'
 import UploadForm from './UploadForm'
-import { Trash2, Plus, Image as ImageIcon } from 'lucide-react'
+import { Trash2, Plus, Image as ImageIcon, Edit2 } from 'lucide-react'
 
 export default function AdminMemoriesPage() {
   const [memories, setMemories] = useState<Memory[]>([])
+  const [editingMemory, setEditingMemory] = useState<Memory | null>(null)
 
   useEffect(() => {
     fetchMemories().then(setMemories)
   }, [])
 
-  const handleMemorySaved = (newMemory: Memory) => {
-    setMemories([newMemory, ...memories])
+  const handleMemorySaved = (savedMemory: Memory) => {
+    setMemories(prev => {
+      const exists = prev.find(m => m.id === savedMemory.id)
+      if (exists) {
+        return prev.map(m => m.id === savedMemory.id ? savedMemory : m)
+      }
+      return [savedMemory, ...prev]
+    })
+    setEditingMemory(null)
   }
 
   const handleDelete = async (id: string) => {
@@ -25,6 +33,15 @@ export default function AdminMemoriesPage() {
     }
   }
 
+  const handleEdit = (memory: Memory) => {
+    setEditingMemory(memory)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleCancelEdit = () => {
+    setEditingMemory(null)
+  }
+
   return (
     <div className="space-y-10 max-w-5xl">
       <div>
@@ -32,11 +49,16 @@ export default function AdminMemoriesPage() {
         <p className="text-gray-500 text-sm">Upload photos and manage your photo album in the cloud.</p>
       </div>
 
-      <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100">
+      <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 transition-all">
         <h2 className="text-lg font-bold mb-4 text-gray-900 flex items-center gap-2">
-          <Plus className="w-5 h-5 text-rose-500" /> Add a New Memory
+          {editingMemory ? <Edit2 className="w-5 h-5 text-rose-500" /> : <Plus className="w-5 h-5 text-rose-500" />} 
+          {editingMemory ? 'Edit Memory' : 'Add a New Memory'}
         </h2>
-        <UploadForm onMemorySaved={handleMemorySaved} />
+        <UploadForm 
+          onMemorySaved={handleMemorySaved} 
+          editMemory={editingMemory} 
+          onCancelEdit={handleCancelEdit} 
+        />
       </div>
 
       <div>
@@ -45,17 +67,22 @@ export default function AdminMemoriesPage() {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
           {memories.filter(m => m.title !== '[GIFT_PHOTO]').map((memory) => (
-            <div key={memory.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
+            <div key={memory.id} className={`bg-white p-4 rounded-2xl shadow-sm border flex flex-col justify-between transition-colors ${editingMemory?.id === memory.id ? 'border-rose-400 ring-1 ring-rose-400' : 'border-gray-100'}`}>
               <div>
                 <div className="relative w-full h-44 mb-3 rounded-xl overflow-hidden bg-gray-100">
                   <img src={memory.imagePath} alt={memory.title} className="object-cover w-full h-full" />
                 </div>
                 <h3 className="font-bold text-base text-gray-900 mb-1">{memory.title}</h3>
-                <p className="text-xs text-gray-400 mb-2">{format(new Date(memory.date), 'PP')}</p>
                 <p className="text-gray-600 text-xs line-clamp-2 mb-4">{memory.caption}</p>
               </div>
               
-              <div className="pt-2 border-t border-gray-50 flex justify-end">
+              <div className="pt-2 border-t border-gray-50 flex justify-end gap-3">
+                <button 
+                  onClick={() => handleEdit(memory)} 
+                  className="text-gray-500 hover:text-gray-900 text-xs font-medium flex items-center gap-1"
+                >
+                  <Edit2 className="w-3.5 h-3.5" /> Edit
+                </button>
                 <button 
                   onClick={() => handleDelete(memory.id)} 
                   className="text-red-500 hover:text-red-700 text-xs font-medium flex items-center gap-1"
