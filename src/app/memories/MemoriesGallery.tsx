@@ -22,18 +22,11 @@ export default function MemoriesGallery({ memories }: { memories: Memory[] }) {
             onClick={() => setSelectedId(memory.id)}
             className="relative rounded-2xl overflow-hidden cursor-pointer group shadow-sm hover:shadow-md transition-shadow aspect-square bg-gray-950"
           >
-            {/* Cinematic Blurred Background to fill the square without black bars */}
-            <img 
-              src={memory.imagePath} 
-              alt="" 
-              className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-125 transition-transform duration-700 group-hover:scale-150" 
-            />
-            
-            {/* Full Uncropped Photo - Zero Cropping */}
+            {/* Filled card prioritizing the top/faces */}
             <img 
               src={memory.imagePath} 
               alt={memory.title} 
-              className="absolute inset-0 w-full h-full object-contain transition-transform duration-500 group-hover:scale-105 z-10 drop-shadow-2xl" 
+              className="absolute inset-0 w-full h-full object-cover object-[center_25%] transition-transform duration-700 group-hover:scale-105 z-10" 
             />
             
             {/* Darker Gradient Overlay for readability */}
