@@ -409,3 +409,81 @@ export function setSafeUnlockedOverride(unlocked: boolean) {
   localStorage.setItem(SAFE_UNLOCKED_KEY, unlocked ? 'true' : 'false');
 }
 
+
+
+export type Polaroid = {
+  id: string;
+  imagePath: string;
+  caption: string;
+  createdAt: number;
+}
+
+const POLAROIDS_KEY = 'birthday_polaroids_data';
+
+export async function fetchPolaroids(): Promise<Polaroid[]> {
+  const supabase = getSupabaseClient()
+  if (supabase) {
+    const { data, error } = await supabase.from('polaroids').select('*').order('created_at', { ascending: false })
+    if (!error && data && data.length > 0) {
+      return data.map(row => ({
+        id: row.id,
+        imagePath: row.image_url,
+        caption: row.caption || '',
+        createdAt: new Date(row.created_at).getTime()
+      }))
+    }
+  }
+  
+  if (typeof window === 'undefined') return [];
+  const stored = localStorage.getItem(POLAROIDS_KEY);
+  return stored ? JSON.parse(stored) : [];
+}
+
+export async function createPolaroid(data: Omit<Polaroid, 'id' | 'createdAt'>, file?: File): Promise<Polaroid> {
+  const newPolaroid: Polaroid = {
+    id: Math.random().toString(36).substring(2, 9),
+    imagePath: data.imagePath,
+    caption: data.caption,
+    createdAt: Date.now()
+  }
+
+  const supabase = getSupabaseClient()
+  if (supabase && file) {
+    const publicUrl = await uploadImageToSupabase(file)
+    if (publicUrl) {
+      newPolaroid.imagePath = publicUrl
+      const { data: insertedData, error } = await supabase.from('polaroids').insert([{
+        id: newPolaroid.id,
+        image_url: newPolaroid.imagePath,
+        caption: newPolaroid.caption,
+        created_at: new Date(newPolaroid.createdAt).toISOString()
+      }]).select().single()
+      
+      if (!error && insertedData) {
+        return {
+          id: insertedData.id,
+          imagePath: insertedData.image_url,
+          caption: insertedData.caption || '',
+          createdAt: new Date(insertedData.created_at).getTime()
+        }
+      }
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    const existing = await fetchPolaroids();
+    localStorage.setItem(POLAROIDS_KEY, JSON.stringify([newPolaroid, ...existing]));
+  }
+  return newPolaroid;
+}
+
+export async function removePolaroid(id: string): Promise<void> {
+  const supabase = getSupabaseClient()
+  if (supabase) {
+    await supabase.from('polaroids').delete().eq('id', id)
+  }
+  if (typeof window !== 'undefined') {
+    const existing = await fetchPolaroids();
+    localStorage.setItem(POLAROIDS_KEY, JSON.stringify(existing.filter(p => p.id !== id)));
+  }
+}
