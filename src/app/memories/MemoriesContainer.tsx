@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { fetchMemories, fetchLetters, setSessionAuthorized } from '@/lib/storage'
+import { fetchMemories, fetchLetters, setSessionAuthorized, getSafeUnlockedOverride } from '@/lib/storage'
 import MemoriesGallery from './MemoriesGallery'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Heart, LockOpen } from 'lucide-react'
@@ -27,6 +27,11 @@ export default function MemoriesContainer() {
     
     // Fetch letter config
     async function loadLetter() {
+      if (getSafeUnlockedOverride()) {
+        const data = await fetchMemories();
+        setMemories(data);
+        return;
+      }
       const letters = await fetchLetters()
       const lockLetter = letters.find(l => l.title === '[LOCK_LETTER]')
       const rawText = lockLetter ? lockLetter.content : DEFAULT_LETTER_TEXT
