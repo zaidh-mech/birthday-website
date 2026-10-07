@@ -353,3 +353,45 @@ export async function updateMemory(id: string, updates: { title: string; caption
   if (!updatedMemory) throw new Error("Memory not found locally")
   return updatedMemory
 }
+
+
+export async function reorderMemories(orderedIds: string[]): Promise<Memory[]> {
+  const supabase = getSupabaseClient()
+  const local = getLocalMemories()
+  const now = Date.now()
+  
+  const memoryMap = new Map(local.map(m => [m.id, m]))
+  const updatedMemories: Memory[] = []
+  
+  for (let i = 0; i < orderedIds.length; i++) {
+    const id = orderedIds[i]
+    const memory = memoryMap.get(id)
+    if (memory) {
+      const newDate = new Date(now - i * 10000).toISOString()
+      updatedMemories.push({ ...memory, date: newDate })
+      
+      if (supabase) {
+        try {
+          await supabase
+            .from('memories')
+            .update({ date: newDate })
+            .eq('id', id)
+        } catch (e) {
+          console.warn('Supabase reorder update failed for id:', id, e)
+        }
+      }
+    }
+  }
+  
+  for (const m of local) {
+    if (!orderedIds.includes(m.id)) {
+      updatedMemories.push(m)
+    }
+  }
+  
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(MEMORIES_KEY, JSON.stringify(updatedMemories))
+  }
+  
+  return updatedMemories
+}
