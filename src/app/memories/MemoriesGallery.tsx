@@ -14,18 +14,18 @@ export default function MemoriesGallery({ memories }: { memories: Memory[] }) {
 
   return (
     <>
-      <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {visibleMemories.map((memory) => (
           <motion.div
             layoutId={`memory-${memory.id}`}
             key={memory.id}
             onClick={() => setSelectedId(memory.id)}
-            className="break-inside-avoid relative rounded-2xl overflow-hidden cursor-pointer group shadow-sm hover:shadow-md transition-shadow mb-6"
+            className="relative rounded-2xl overflow-hidden cursor-pointer group shadow-sm hover:shadow-md transition-shadow aspect-square"
           >
              <img 
                src={memory.imagePath} 
                alt={memory.title} 
-               className="w-full h-auto object-cover block" 
+               className="w-full h-full object-cover block transition-transform duration-500 group-hover:scale-105" 
              />
             
             <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
