@@ -395,3 +395,17 @@ export async function reorderMemories(orderedIds: string[]): Promise<Memory[]> {
   
   return updatedMemories
 }
+
+
+export const SAFE_UNLOCKED_KEY = 'birthday_safe_unlocked_override';
+
+export function getSafeUnlockedOverride(): boolean {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem(SAFE_UNLOCKED_KEY) === 'true';
+}
+
+export function setSafeUnlockedOverride(unlocked: boolean) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(SAFE_UNLOCKED_KEY, unlocked ? 'true' : 'false');
+}
+

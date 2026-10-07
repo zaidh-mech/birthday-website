@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createLetter, fetchLetters, removeLetter } from '@/lib/storage'
-import { Save, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { createLetter, fetchLetters, removeLetter, getSafeUnlockedOverride, setSafeUnlockedOverride } from '@/lib/storage'
+import { Save, AlertCircle, CheckCircle2, Unlock } from 'lucide-react'
 
 const DEFAULT_LETTER_TEXT = `To my dearest [pet name|baby],
 
@@ -16,6 +16,7 @@ export default function SafeConfigPage() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [isError, setIsError] = useState(false)
+  const [isUnlocked, setIsUnlocked] = useState(false)
 
   useEffect(() => {
     async function loadConfig() {
@@ -26,10 +27,17 @@ export default function SafeConfigPage() {
       } else {
         setText(DEFAULT_LETTER_TEXT)
       }
+      setIsUnlocked(getSafeUnlockedOverride())
       setLoading(false)
     }
     loadConfig()
   }, [])
+
+  const handleToggleUnlock = () => {
+    const newVal = !isUnlocked;
+    setIsUnlocked(newVal);
+    setSafeUnlockedOverride(newVal);
+  }
 
   async function handleSave() {
     setSaving(true)
@@ -67,11 +75,33 @@ export default function SafeConfigPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Love Letter Safe Configuration</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Customize the interactive Love Letter that unlocks the Memories page.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Love Letter Safe Configuration</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Customize the interactive Love Letter that unlocks the Memories page.
+          </p>
+        </div>
+        
+        {/* Toggle Unlock Override */}
+        <div className="bg-white px-4 py-3 rounded-xl border border-gray-200 flex items-center gap-3 shadow-sm">
+          <div className="p-2 bg-rose-50 rounded-lg">
+            <Unlock className="w-5 h-5 text-rose-600" />
+          </div>
+          <div className="flex-1 mr-4">
+            <p className="text-sm font-bold text-gray-900 leading-none">Unlock globally</p>
+            <p className="text-xs text-gray-500 mt-1">Bypass the puzzle</p>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input 
+              type="checkbox" 
+              className="sr-only peer" 
+              checked={isUnlocked}
+              onChange={handleToggleUnlock}
+            />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-500"></div>
+          </label>
+        </div>
       </div>
 
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -82,11 +112,11 @@ export default function SafeConfigPage() {
               <p><strong>How to create hidden fill-in-the-blanks:</strong></p>
               <p>Type your letter normally. When you want to create a blank that she has to fill in, use brackets like this: <code>[placeholder|answer]</code>.</p>
               <ul className="list-disc pl-5 space-y-1">
-                <li><strong>Placeholder:</strong> The hint shown inside the empty box (e.g., "pet name")</li>
-                <li><strong>Answer:</strong> The exact word she needs to type to unlock it (e.g., "baby")</li>
+                <li><strong>Placeholder:</strong> The hint shown inside the empty box (e.g., &quot;pet name&quot;)</li>
+                <li><strong>Answer:</strong> The exact word she needs to type to unlock it (e.g., &quot;baby&quot;)</li>
               </ul>
               <p className="mt-2 font-mono bg-white/50 px-2 py-1 rounded inline-block text-blue-900 border border-blue-200">
-                Example: "I love your [feature|smile] so much!"
+                Example: &quot;I love your [feature|smile] so much!&quot;
               </p>
             </div>
           </div>
