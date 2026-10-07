@@ -20,17 +20,26 @@ export default function MemoriesGallery({ memories }: { memories: Memory[] }) {
             layoutId={`memory-${memory.id}`}
             key={memory.id}
             onClick={() => setSelectedId(memory.id)}
-            className="relative rounded-2xl overflow-hidden cursor-pointer group shadow-sm hover:shadow-md transition-shadow aspect-square"
+            className="relative rounded-2xl overflow-hidden cursor-pointer group shadow-sm hover:shadow-md transition-shadow aspect-square bg-gray-950"
           >
-             <img 
-               src={memory.imagePath} 
-               alt={memory.title} 
-               className="w-full h-full object-cover block transition-transform duration-500 group-hover:scale-105" 
-             />
+            {/* Cinematic Blurred Background to fill the square without black bars */}
+            <img 
+              src={memory.imagePath} 
+              alt="" 
+              className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40 scale-125 transition-transform duration-700 group-hover:scale-150" 
+            />
             
-            <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
-              <h3 className="text-white font-serif text-xl font-bold">{memory.title}</h3>
-              </div>
+            {/* Full Uncropped Photo - Zero Cropping */}
+            <img 
+              src={memory.imagePath} 
+              alt={memory.title} 
+              className="absolute inset-0 w-full h-full object-contain transition-transform duration-500 group-hover:scale-105 z-10 drop-shadow-2xl" 
+            />
+            
+            {/* Darker Gradient Overlay for readability */}
+            <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+              <h3 className="text-white font-serif text-xl font-bold translate-y-4 group-hover:translate-y-0 transition-transform duration-300">{memory.title}</h3>
+            </div>
           </motion.div>
         ))}
         {memories.length === 0 && (
