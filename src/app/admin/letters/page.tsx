@@ -119,10 +119,10 @@ export default function AdminLettersPage() {
 
       <div>
         <h2 className="text-lg font-bold mb-4 text-gray-900 flex items-center gap-2">
-          <BookOpen className="w-5 h-5 text-rose-500" /> Saved Letters ({letters.length})
+          <BookOpen className="w-5 h-5 text-rose-500" /> Saved Letters ({letters.filter(l => !l.title.startsWith('[')).length})
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {letters.map((letter) => (
+          {letters.filter(l => !l.title.startsWith('[')).map((letter) => (
             <div key={letter.id} className={`bg-white p-5 rounded-2xl shadow-sm border flex flex-col justify-between ${editId === letter.id ? 'border-amber-300 ring-2 ring-amber-50' : 'border-gray-100'}`}>
               <div>
                 <span className="text-xs font-semibold text-rose-400 uppercase tracking-wider">{letter.occasion}</span>

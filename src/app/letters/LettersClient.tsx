@@ -10,15 +10,16 @@ import { Letter } from '@/data/initialData'
 export default function LettersClient({ letters }: { letters: Letter[] }) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   
-  const selectedLetter = letters.find(l => l.id === selectedId)
+  const visibleLetters = letters.filter(l => !l.title.startsWith('['))
+  const selectedLetter = visibleLetters.find(l => l.id === selectedId)
 
   return (
     <>
       <div className="flex flex-col items-center -space-y-16 md:-space-y-24 pt-10 pb-32 px-4">
-        {letters.map((letter, i) => {
+        {visibleLetters.map((letter, i) => {
           const rotation = (i % 2 === 0 ? 1 : -1) * ((i % 3) + 2)
           const xOffset = (i % 2 === 0 ? 1 : -1) * ((i % 4) * 8)
-          const zIndex = letters.length - i
+          const zIndex = visibleLetters.length - i
 
           return (
             <motion.div

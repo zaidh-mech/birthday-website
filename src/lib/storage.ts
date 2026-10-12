@@ -487,3 +487,69 @@ export async function removePolaroid(id: string): Promise<void> {
     localStorage.setItem(POLAROIDS_KEY, JSON.stringify(existing.filter(p => p.id !== id)));
   }
 }
+
+export const DEFAULT_GIFT_PLACE_ID = 'churros'
+const GIFT_PLACE_KEY = 'birthday_selected_gift_place'
+
+export async function fetchSelectedGiftPlace(): Promise<string> {
+  const supabase = getSupabaseClient()
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('letters')
+        .select('*')
+        .eq('title', '[GIFT_PLACE]')
+        .single()
+      if (!error && data && data.content) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(GIFT_PLACE_KEY, data.content)
+        }
+        return data.content
+      }
+    } catch (e) {
+      console.warn('Supabase fetch gift place failed:', e)
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    const local = localStorage.getItem(GIFT_PLACE_KEY)
+    if (local) return local
+  }
+  return DEFAULT_GIFT_PLACE_ID
+}
+
+export async function saveSelectedGiftPlace(placeId: string): Promise<void> {
+  const supabase = getSupabaseClient()
+  if (supabase) {
+    try {
+      const { data } = await supabase
+        .from('letters')
+        .select('id')
+        .eq('title', '[GIFT_PLACE]')
+        .single()
+
+      if (data) {
+        await supabase
+          .from('letters')
+          .update({ content: placeId, date: new Date().toISOString() })
+          .eq('id', data.id)
+      } else {
+        await supabase
+          .from('letters')
+          .insert({
+            title: '[GIFT_PLACE]',
+            content: placeId,
+            occasion: 'gift',
+            date: new Date().toISOString()
+          })
+      }
+    } catch (e) {
+      console.warn('Supabase save gift place failed:', e)
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(GIFT_PLACE_KEY, placeId)
+  }
+}
+
