@@ -121,12 +121,12 @@ export default function AdminPolaroidsPage() {
                 key={p.id} 
                 className="bg-white p-3 pb-4 rounded-sm shadow-md border border-gray-100 relative group flex flex-col justify-between w-full"
               >
-                {/* Uniform Square Polaroid Photo Window */}
-                <div className="w-full aspect-square bg-gray-100 overflow-hidden relative rounded-xs shrink-0">
+                {/* Uniform 3:4 Portrait Polaroid Photo Window (Matches Smartphone Photos) */}
+                <div className="w-full aspect-[3/4] bg-gray-100 overflow-hidden relative rounded-xs shrink-0">
                   <img 
                     src={p.imagePath} 
                     alt={p.caption} 
-                    className="absolute inset-0 w-full h-full object-cover object-[center_25%]" 
+                    className="absolute inset-0 w-full h-full object-cover object-center" 
                   />
                 </div>
                 
