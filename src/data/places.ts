@@ -294,6 +294,139 @@ export const places: Place[] = [
         note: 'Prior reservation required. Exclusive artisan tea pairings.'
       }
     }
+  },
+  {
+    id: 'kingsbury-lunch',
+    name: 'Harbour Court',
+    subtitle: 'The Kingsbury (Unlimited Lunch)',
+    time: '12:00 PM - 3:00 PM',
+    days: 'Mon-Sat (Lunch Buffet), Sun (Grand Sunday Brunch)',
+    price: 'LKR 5,400 - 6,900 nett',
+    desc: 'Lavish oceanfront international buffet with live sushi, seafood & carving stations.',
+    ambiance: 'Grand oceanfront luxury overlooking the Indian Ocean and Colombo Port. Features live sushi counters, roasted meats, fresh seafood, and an extensive dessert island.',
+    type: 'Unlimited Lunch Buffet',
+    image: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/139151623.jpg?k=8db541bd72fa8bfa376c1fbfeaba63fe676a91ea87024fba9e82429e806aec19&o=',
+    themeClass: 'bg-[#0B1528] text-[#E8F0FE]',
+    accentClass: 'bg-[#15243F] text-[#D0E2FF] border-[#25467A]',
+    buttonClass: 'bg-[#1D4ED8] hover:bg-[#2563EB] text-white',
+    scheduleRules: {
+      daysOpen: [0, 1, 2, 3, 4, 5, 6],
+      weekendDays: [0], // Sunday is Grand Sunday Brunch
+      weekday: {
+        isOpen: true,
+        format: 'International Lunch Buffet',
+        time: '12:00 PM - 3:00 PM',
+        price: 'LKR 5,400 nett per person',
+        note: 'Unlimited international lunch buffet with live culinary stations, sushi & ocean views.'
+      },
+      weekend: {
+        isOpen: true,
+        format: 'Grand Sunday Brunch / Weekend Feast',
+        time: '12:00 PM - 3:00 PM',
+        price: 'LKR 6,900 nett per person',
+        note: 'Grand weekend lunch spread with roast carving stations, fresh seafood bar, and artisan desserts.'
+      }
+    }
+  },
+  {
+    id: 'cityofdreams-lunch',
+    name: 'Quizine Lunch Buffet',
+    subtitle: 'City of Dreams (Cinnamon Life)',
+    time: '12:00 PM - 3:00 PM',
+    days: 'Daily (International Culinary Theatre)',
+    price: 'LKR 6,900 - 8,000 nett',
+    desc: 'Spectacular global culinary theatre with live interactive counters across world cuisines.',
+    ambiance: 'Ultra-modern 5-star integrated resort luxury. An interactive culinary showcase featuring authentic Western, Asian, Indian, live sushi bar, carving stations, and a decadent dessert gallery.',
+    type: 'Grand Lunch Buffet',
+    image: 'https://d18slle4wlf9ku.cloudfront.net/www.cinnamonhotels.com-1754953340/cms/cache/v2/670e6d1788d59.jpg/1920x1080/fit/80/0da55743ce9536d37a9513834e23b03e.jpg',
+    themeClass: 'bg-[#1B0F2B] text-[#F3E8FF]',
+    accentClass: 'bg-[#2D1A45] text-[#E9D5FF] border-[#6B21A8]',
+    buttonClass: 'bg-[#7C3AED] hover:bg-[#8B5CF6] text-white',
+    scheduleRules: {
+      daysOpen: [0, 1, 2, 3, 4, 5, 6],
+      weekendDays: [5, 6, 0],
+      weekday: {
+        isOpen: true,
+        format: 'Grand International Lunch Buffet',
+        time: '12:00 PM - 3:00 PM',
+        price: 'LKR 6,900 nett per person',
+        note: 'Lavish international lunch spread featuring live cooking counters across Western, Asian, and Sri Lankan cuisines.'
+      },
+      weekend: {
+        isOpen: true,
+        format: 'Weekend Grand Luxury Buffet',
+        time: '12:00 PM - 3:00 PM',
+        price: 'LKR 8,000 nett per person',
+        note: 'Premier weekend culinary showcase with live sushi, seafood grills, artisan carveries & pastry gallery.'
+      }
+    }
+  },
+  {
+    id: 'cityofdreams-hightea',
+    name: 'Afternoon Bliss High Tea',
+    subtitle: 'City of Dreams (Nüwa Level 25)',
+    time: '3:00 PM - 6:00 PM',
+    days: 'Daily (Platter for Two & Sunset Specials)',
+    price: 'LKR 4,000 / person (LKR 8,000 for two)',
+    desc: 'Rooftop poolside luxury high tea platter with handcrafted sweets, savories & Ceylon teas.',
+    ambiance: 'Stunning 25th-floor open-air rooftop poolside view overlooking the Colombo skyline and Beira Lake. Intimate tiered luxury platter featuring gourmet savoury canapés, artisanal macarons, and premium Ceylon tea pairings.',
+    type: 'High Tea Platter',
+    image: 'https://www.cityofdreamssrilanka.com/sites/g/files/codsrilanka/files/2026-07/Afternoon%20bliss%20Thumbnail.png',
+    themeClass: 'bg-[#2A0F1D] text-[#FCE7F3]',
+    accentClass: 'bg-[#42172F] text-[#FBCFE8] border-[#9D174D]',
+    buttonClass: 'bg-[#BE185D] hover:bg-[#DB2777] text-white',
+    scheduleRules: {
+      daysOpen: [0, 1, 2, 3, 4, 5, 6],
+      weekendDays: [5, 6, 0],
+      reservationRequired: true,
+      weekday: {
+        isOpen: true,
+        format: 'Rooftop High Tea Platter for Two',
+        time: '3:00 PM - 6:00 PM',
+        price: 'LKR 8,000 nett for two (~LKR 4,000 / person)',
+        note: 'Luxury 3-tier tiered platter with savories & sweets at Level 25 Poolside. Reservation recommended before 12 PM.'
+      },
+      weekend: {
+        isOpen: true,
+        format: 'Weekend Sunset High Tea Experience',
+        time: '3:00 PM - 6:00 PM',
+        price: 'LKR 8,000 nett for two (~LKR 4,000 / person)',
+        note: 'Romantic sunset high tea on Level 25 overlooking the city. Prior reservation required.'
+      }
+    }
+  },
+  {
+    id: 'cinnamonlife-sweetlab',
+    name: 'Sweet Lab Afternoon Tea',
+    subtitle: 'City of Dreams (Cinnamon Life)',
+    time: '3:00 PM - 6:00 PM',
+    days: 'Thu-Sun (High Tea & Dessert Lounge)',
+    price: 'LKR 4,500 - 5,500 nett for two',
+    desc: 'Chic modern pâtisserie lounge with afternoon tea platters & artisan desserts.',
+    ambiance: 'Vibrant, playful, and Instagrammable confectionery cafe inside Cinnamon Life. Signature artisan pastries, gourmet savory bites, and fine teas.',
+    type: 'High Tea & Patisserie',
+    image: 'https://www.cityofdreamssrilanka.com/sites/g/files/codsrilanka/files/2025-07/NuwaSL-Main1_mobbanner560x560-guide.jpg',
+    themeClass: 'bg-[#2D1B28] text-[#FDF2F8]',
+    accentClass: 'bg-[#44273C] text-[#FCE7F3] border-[#831843]',
+    buttonClass: 'bg-[#DB2777] hover:bg-[#F472B6] text-white',
+    scheduleRules: {
+      daysOpen: [4, 5, 6, 0], // Thursday to Sunday
+      weekendDays: [5, 6, 0],
+      weekday: {
+        isOpen: true,
+        format: 'Artisan Afternoon Tea Platter',
+        time: '3:00 PM - 6:00 PM',
+        price: 'LKR 4,500 nett for two (~LKR 2,250 / person)',
+        note: 'Curated 3-tier sweet & savory selection with signature Ceylon brews.'
+      },
+      weekend: {
+        isOpen: true,
+        format: 'Weekend High Tea & Patisserie Spread',
+        time: '3:00 PM - 6:00 PM',
+        price: 'LKR 5,500 nett for two (~LKR 2,750 / person)',
+        note: 'Weekend special featuring live dessert counters and artisanal delicacies.'
+      }
+    }
   }
 ]
 
@@ -426,10 +559,12 @@ export function findBestBuffetAlternative(
 
   // Smart ranking: prioritize top-rated hotel buffets with daily live stations
   const ranked = [...buffetMatches].sort((a, b) => {
-    if (a.place.id === 'beira') return -1
-    if (b.place.id === 'beira') return 1
-    if (a.place.id === 'mandarina' || a.place.id === 'churros') return -1
-    if (b.place.id === 'mandarina' || b.place.id === 'churros') return 1
+    const priority = ['cityofdreams-lunch', 'kingsbury-lunch', 'beira', 'mandarina', 'churros']
+    const aIndex = priority.indexOf(a.place.id)
+    const bIndex = priority.indexOf(b.place.id)
+    if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex
+    if (aIndex !== -1) return -1
+    if (bIndex !== -1) return 1
     return 0
   })
 

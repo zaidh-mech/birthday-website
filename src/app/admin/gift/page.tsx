@@ -431,6 +431,8 @@ export default function AdminGiftPage() {
                     onChange={(e) => setType(e.target.value)}
                     className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-200"
                   >
+                    <option value="Unlimited Lunch Buffet">Unlimited Lunch Buffet</option>
+                    <option value="Grand Lunch Buffet">Grand Lunch Buffet</option>
                     <option value="High Tea Buffet">High Tea Buffet</option>
                     <option value="High Tea Platter">High Tea Platter</option>
                     <option value="Brunch & Cafe">Brunch &amp; Cafe</option>
