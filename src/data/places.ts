@@ -403,3 +403,39 @@ export function evaluatePlaceForDate(place: Place, dateStr: string): DateAvailab
     reservationRequired
   }
 }
+
+export function findBestBuffetAlternative(
+  allPlaces: Place[],
+  currentPlaceId: string,
+  dateStr: string
+): { place: Place; availability: DateAvailability } | null {
+  const candidates = allPlaces.filter(p => p.id !== currentPlaceId)
+
+  const buffetMatches = candidates
+    .map(p => {
+      const avail = evaluatePlaceForDate(p, dateStr)
+      const isBuffet = avail.isOpen && (
+        avail.format.toLowerCase().includes('buffet') ||
+        p.type.toLowerCase().includes('buffet')
+      )
+      return { place: p, availability: avail, isBuffet }
+    })
+    .filter(item => item.isBuffet)
+
+  if (buffetMatches.length === 0) return null
+
+  // Smart ranking: prioritize top-rated hotel buffets with daily live stations
+  const ranked = [...buffetMatches].sort((a, b) => {
+    if (a.place.id === 'beira') return -1
+    if (b.place.id === 'beira') return 1
+    if (a.place.id === 'mandarina' || a.place.id === 'churros') return -1
+    if (b.place.id === 'mandarina' || b.place.id === 'churros') return 1
+    return 0
+  })
+
+  return {
+    place: ranked[0].place,
+    availability: ranked[0].availability
+  }
+}
+

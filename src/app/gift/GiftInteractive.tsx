@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { fetchMemories, fetchSelectedGiftPlace, fetchPlaces, recordDateAcceptance } from '@/lib/storage'
-import { Place, evaluatePlaceForDate } from '@/data/places'
-import { CalendarDays, Clock, Wallet, MapPin, Info, MessageCircle, AlertCircle, Sparkles } from 'lucide-react'
+import { Place, evaluatePlaceForDate, findBestBuffetAlternative } from '@/data/places'
+import { CalendarDays, Clock, Wallet, MapPin, Info, MessageCircle, AlertCircle, Sparkles, Check, Utensils } from 'lucide-react'
 
 export default function GiftInteractive() {
   const [step, setStep] = useState(0)
@@ -12,6 +12,7 @@ export default function GiftInteractive() {
   const [color, setColor] = useState('')
   const [allPlaces, setAllPlaces] = useState<Place[]>([])
   const [selectedPlaceId, setSelectedPlaceId] = useState<string>('churros')
+  const [chosenOptionId, setChosenOptionId] = useState<string | null>(null)
   const [cuteFellaPhoto, setCuteFellaPhoto] = useState<string | null>(null)
   const [customMessage, setCustomMessage] = useState('')
 
@@ -34,7 +35,7 @@ export default function GiftInteractive() {
     loadData()
   }, [])
 
-  const chosenPlace = allPlaces.find(p => p.id === selectedPlaceId) || allPlaces[0] || {
+  const defaultPlace = allPlaces.find(p => p.id === selectedPlaceId) || allPlaces[0] || {
     id: 'churros',
     name: 'The Churros',
     subtitle: 'The Kingsbury Hotel',
@@ -50,8 +51,20 @@ export default function GiftInteractive() {
     buttonClass: 'bg-[#8C6D53] hover:bg-[#A68365] text-white',
   }
 
-  // Calculate dynamic schedule & availability for chosen date
-  const availability = evaluatePlaceForDate(chosenPlace, date)
+  // Calculate schedule for boyfriend's selected place
+  const defaultAvailability = evaluatePlaceForDate(defaultPlace, date)
+
+  // Check if chosen place has a 'platter' on this date
+  const isPlatter = defaultAvailability.format.toLowerCase().includes('platter') || 
+                    defaultPlace.type.toLowerCase().includes('platter')
+
+  // Find next best buffet alternative if date is a platter day
+  const buffetAlternative = isPlatter ? findBestBuffetAlternative(allPlaces, defaultPlace.id, date) : null
+
+  // Active venue: if she toggled to the buffet option, use buffetAlternative, otherwise use defaultPlace
+  const isBuffetSelected = buffetAlternative && chosenOptionId === buffetAlternative.place.id
+  const activePlace = isBuffetSelected ? buffetAlternative.place : defaultPlace
+  const activeAvailability = isBuffetSelected ? buffetAlternative.availability : defaultAvailability
 
   const nextStep = () => setStep(s => s + 1)
   const handleYes = () => setStep(3)
@@ -62,15 +75,15 @@ export default function GiftInteractive() {
   const handleAcceptInvitation = async () => {
     // 1. Record acceptance in database / localStorage
     const rsvpData = {
-      placeId: chosenPlace.id,
-      placeName: chosenPlace.name,
-      placeSubtitle: chosenPlace.subtitle,
+      placeId: activePlace.id,
+      placeName: activePlace.name,
+      placeSubtitle: activePlace.subtitle,
       date,
-      formattedDate: availability.formattedDate,
-      dayName: availability.dayName,
-      time: availability.time,
-      format: availability.format,
-      price: availability.price,
+      formattedDate: activeAvailability.formattedDate,
+      dayName: activeAvailability.dayName,
+      time: activeAvailability.time,
+      format: activeAvailability.format,
+      price: activeAvailability.price,
       color,
       acceptedAt: new Date().toISOString()
     }
@@ -78,7 +91,7 @@ export default function GiftInteractive() {
 
     // 2. Open WhatsApp message to boyfriend
     const phoneNumber = "94741999926"
-    const text = `❤️ INVITATION ACCEPTED! ❤️\n\nHey my love! I just accepted your invitation for our 5-Year Anniversary date! 🥰\n\n📍 *Destination:* ${chosenPlace.name} (${chosenPlace.subtitle})\n📅 *Date:* ${availability.formattedDate}\n⏰ *Time:* ${availability.time}\n✨ *Offering:* ${availability.format}\n💳 *Price / Details:* ${availability.price}\n🎨 *Dress Theme:* ${color}\n\nI can't wait to celebrate with you! Mwah! 😘`
+    const text = `❤️ INVITATION ACCEPTED! ❤️\n\nHey my love! I just accepted your invitation for our 5-Year Anniversary date! 🥰\n\n📍 *Destination:* ${activePlace.name} (${activePlace.subtitle})\n📅 *Date:* ${activeAvailability.formattedDate}\n⏰ *Time:* ${activeAvailability.time}\n✨ *Offering:* ${activeAvailability.format}\n💳 *Price / Details:* ${activeAvailability.price}\n🎨 *Dress Theme:* ${color}\n\nI can't wait to celebrate with you! Mwah! 😘`
     const encoded = encodeURIComponent(text)
     window.open(`https://wa.me/${phoneNumber}?text=${encoded}`, '_blank')
 
@@ -88,8 +101,8 @@ export default function GiftInteractive() {
 
   const handleWhatsAppSend = () => {
     const phoneNumber = "94741999926"
-    const placeTitle = `${chosenPlace.name} (${chosenPlace.subtitle})`
-    const baseText = `Hey my love! ❤️\n\nI'm so excited for our 5-Year Anniversary! 🥰\nI'm ready for our date:\n📍 *Where:* ${placeTitle}\n📅 *When:* ${availability.formattedDate}\n⏰ *Time:* ${availability.time}\n✨ *Offering:* ${availability.format}\n🎨 *Dress Theme:* ${color}\n\n`
+    const placeTitle = `${activePlace.name} (${activePlace.subtitle})`
+    const baseText = `Hey my love! ❤️\n\nI'm so excited for our 5-Year Anniversary! 🥰\nI'm ready for our date:\n📍 *Where:* ${placeTitle}\n📅 *When:* ${activeAvailability.formattedDate}\n⏰ *Time:* ${activeAvailability.time}\n✨ *Offering:* ${activeAvailability.format}\n🎨 *Dress Theme:* ${color}\n\n`
     const finalMessage = customMessage.trim() ? `${baseText}*My message to you:* ${customMessage}` : `${baseText}I can't wait to see you! 😘`
     const encodedMessage = encodeURIComponent(finalMessage)
     window.open(`https://wa.me/${phoneNumber}?text=${encodedMessage}`, '_blank')
@@ -249,37 +262,110 @@ export default function GiftInteractive() {
                   I&apos;ve planned everything for us! 🥰
                 </h2>
                 <p className="text-gray-600 dark:text-gray-300 font-medium max-w-lg mx-auto text-sm md:text-base">
-                  You don&apos;t have to worry about a thing. I&apos;ve already verified our date and chosen our dream spot:
+                  {buffetAlternative ? (
+                    <>
+                      On your chosen day, my pick serves their high tea platter. If you&apos;re craving a live buffet spread instead, I&apos;ve also found the best buffet in town for that exact day! Choose which one you&apos;re feeling:
+                    </>
+                  ) : (
+                    <>
+                      You don&apos;t have to worry about a thing. I&apos;ve already verified our date and chosen our dream spot:
+                    </>
+                  )}
                 </p>
               </div>
 
-              {/* Reveal Showcase Card */}
-              <div className={`relative rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/20 dark:border-white/10 ${chosenPlace.themeClass}`}>
+              {/* Smart Platter vs Buffet Options Switcher (Only appears if chosen spot has a platter on that day) */}
+              {buffetAlternative && (
+                <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {/* Option 1: His Chosen Spot (Platter) */}
+                  <div
+                    onClick={() => setChosenOptionId(defaultPlace.id)}
+                    className={`p-4 rounded-2xl cursor-pointer border-2 transition-all flex flex-col justify-between ${
+                      !isBuffetSelected
+                        ? 'bg-rose-500/10 border-rose-500 shadow-md ring-2 ring-rose-200'
+                        : 'bg-white/60 dark:bg-white/5 border-gray-200 dark:border-white/10 hover:border-gray-300'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-900/50 px-2.5 py-0.5 rounded-full">
+                          My Planned Pick 💌
+                        </span>
+                        {!isBuffetSelected && (
+                          <div className="w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center">
+                            <Check className="w-3.5 h-3.5" />
+                          </div>
+                        )}
+                      </div>
+                      <h4 className="font-serif font-bold text-base text-gray-900 dark:text-gray-100">{defaultPlace.name}</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{defaultPlace.subtitle}</p>
+                    </div>
+
+                    <div className="mt-3 pt-2.5 border-t border-gray-200/50 dark:border-white/10 text-xs">
+                      <p className="font-medium text-rose-700 dark:text-rose-300">{defaultAvailability.format}</p>
+                      <p className="text-gray-500 text-[11px]">{defaultAvailability.time} • {defaultAvailability.price}</p>
+                    </div>
+                  </div>
+
+                  {/* Option 2: Smart Buffet Alternative */}
+                  <div
+                    onClick={() => setChosenOptionId(buffetAlternative.place.id)}
+                    className={`p-4 rounded-2xl cursor-pointer border-2 transition-all flex flex-col justify-between ${
+                      isBuffetSelected
+                        ? 'bg-amber-500/10 border-amber-500 shadow-md ring-2 ring-amber-200'
+                        : 'bg-white/60 dark:bg-white/5 border-gray-200 dark:border-white/10 hover:border-gray-300'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                          <Utensils className="w-2.5 h-2.5" /> Live Buffet Option ✨
+                        </span>
+                        {isBuffetSelected && (
+                          <div className="w-5 h-5 rounded-full bg-amber-500 text-white flex items-center justify-center">
+                            <Check className="w-3.5 h-3.5" />
+                          </div>
+                        )}
+                      </div>
+                      <h4 className="font-serif font-bold text-base text-gray-900 dark:text-gray-100">{buffetAlternative.place.name}</h4>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{buffetAlternative.place.subtitle}</p>
+                    </div>
+
+                    <div className="mt-3 pt-2.5 border-t border-gray-200/50 dark:border-white/10 text-xs">
+                      <p className="font-medium text-amber-700 dark:text-amber-300">{buffetAlternative.availability.format}</p>
+                      <p className="text-gray-500 text-[11px]">{buffetAlternative.availability.time} • {buffetAlternative.availability.price}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Reveal Showcase Card for the Selected Option */}
+              <div className={`relative rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/20 dark:border-white/10 transition-all ${activePlace.themeClass}`}>
                 {/* Photo & Badges */}
                 <div className="relative h-64 md:h-72 w-full overflow-hidden">
                   <img 
-                    src={chosenPlace.image} 
-                    alt={chosenPlace.name} 
-                    className="w-full h-full object-cover"
+                    src={activePlace.image} 
+                    alt={activePlace.name} 
+                    className="w-full h-full object-cover transition-transform duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
                   
                   {/* Dynamic Availability Badge */}
                   <div className="absolute top-4 left-4 flex flex-wrap gap-2">
                     <span className="px-3.5 py-1.5 bg-black/60 backdrop-blur-md text-white text-xs font-bold uppercase tracking-widest rounded-xl border border-white/20">
-                      {chosenPlace.type}
+                      {activePlace.type}
                     </span>
                     <span className="px-3 py-1.5 bg-rose-500/90 backdrop-blur-md text-white text-xs font-bold rounded-xl shadow-md flex items-center gap-1.5">
-                      {availability.badge}
+                      {activeAvailability.badge}
                     </span>
                   </div>
 
                   <div className="absolute bottom-4 left-6 right-6 text-white">
                     <h3 className="font-serif text-3xl md:text-4xl font-bold leading-tight">
-                      {chosenPlace.name}
+                      {activePlace.name}
                     </h3>
                     <p className="text-sm md:text-base text-white/90 font-medium mt-0.5">
-                      {chosenPlace.subtitle}
+                      {activePlace.subtitle}
                     </p>
                   </div>
                 </div>
@@ -287,43 +373,43 @@ export default function GiftInteractive() {
                 {/* Details Section */}
                 <div className="p-6 md:p-8 space-y-6">
                   <p className="text-base md:text-lg leading-relaxed italic opacity-95">
-                    &quot;{chosenPlace.ambiance}&quot;
+                    &quot;{activePlace.ambiance}&quot;
                   </p>
 
                   {/* Day-of-Week Specific Evaluated Schedule Box */}
-                  <div className={`p-4 md:p-5 rounded-2xl border space-y-3.5 ${chosenPlace.accentClass}`}>
+                  <div className={`p-4 md:p-5 rounded-2xl border space-y-3.5 ${activePlace.accentClass}`}>
                     <div className="flex items-center gap-3 text-sm font-medium">
                       <CalendarDays className="w-4 h-4 opacity-80 shrink-0 text-rose-400" />
-                      <span><strong>Date Selected:</strong> {availability.formattedDate}</span>
+                      <span><strong>Date Selected:</strong> {activeAvailability.formattedDate}</span>
                     </div>
 
                     <div className="flex items-center gap-3 text-sm">
                       <Sparkles className="w-4 h-4 opacity-80 shrink-0 text-amber-400" />
-                      <span><strong>Offering for this Day:</strong> {availability.format}</span>
+                      <span><strong>Offering for this Day:</strong> {activeAvailability.format}</span>
                     </div>
 
                     <div className="flex items-center gap-3 text-sm">
                       <Clock className="w-4 h-4 opacity-80 shrink-0 text-sky-400" />
-                      <span><strong>Timings:</strong> {availability.time}</span>
+                      <span><strong>Timings:</strong> {activeAvailability.time}</span>
                     </div>
 
                     <div className="flex items-center gap-3 text-sm">
                       <Wallet className="w-4 h-4 opacity-80 shrink-0 text-emerald-400" />
-                      <span><strong>Pricing / Experience:</strong> {availability.price}</span>
+                      <span><strong>Pricing / Experience:</strong> {activeAvailability.price}</span>
                     </div>
 
-                    {availability.note && (
+                    {activeAvailability.note && (
                       <div className="pt-2 border-t border-white/10 text-xs opacity-90 italic">
-                        💡 {availability.note}
+                        💡 {activeAvailability.note}
                       </div>
                     )}
                   </div>
 
                   {/* Operational Status Notice */}
-                  {availability.statusMessage && (
+                  {activeAvailability.statusMessage && (
                     <div className="bg-amber-500/10 border border-amber-500/30 p-3.5 rounded-xl text-xs flex items-center gap-2.5 text-amber-200">
                       <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
-                      <span>{availability.statusMessage}</span>
+                      <span>{activeAvailability.statusMessage}</span>
                     </div>
                   )}
 
@@ -334,9 +420,11 @@ export default function GiftInteractive() {
 
                     <button 
                       onClick={handleAcceptInvitation} 
-                      className={`w-full py-4 md:py-5 rounded-full font-bold text-lg shadow-xl transition-all hover:scale-[1.02] flex items-center justify-center gap-2 ${chosenPlace.buttonClass}`}
+                      className={`w-full py-4 md:py-5 rounded-full font-bold text-lg shadow-xl transition-all hover:scale-[1.02] flex items-center justify-center gap-2 ${activePlace.buttonClass}`}
                     >
-                      <span>Accept Invitation &amp; View Ticket</span> 💌
+                      <span>
+                        Accept &amp; Lock in {activePlace.name} {isBuffetSelected ? '(Buffet)' : ''}
+                      </span> 💌
                     </button>
                     <p className="text-[11px] opacity-70 mt-2">
                       (Tapping will notify me on WhatsApp and reveal your celebration ticket!)
@@ -382,7 +470,7 @@ export default function GiftInteractive() {
                       <div className="flex-1">
                         <p className="text-xs uppercase tracking-widest text-rose-400 dark:text-rose-500 font-semibold mb-1">When</p>
                         <p className="font-serif font-bold text-gray-900 dark:text-gray-100 text-lg">
-                          {availability.formattedDate}
+                          {activeAvailability.formattedDate}
                         </p>
                       </div>
                     </div>
@@ -394,10 +482,10 @@ export default function GiftInteractive() {
                       <div className="flex-1">
                         <p className="text-xs uppercase tracking-widest text-purple-400 dark:text-purple-500 font-semibold mb-1">Where &amp; Format</p>
                         <p className="font-serif font-bold text-gray-900 dark:text-gray-100 text-lg">
-                          {chosenPlace.name} <span className="text-sm font-normal text-gray-500 dark:text-gray-400">({chosenPlace.subtitle})</span>
+                          {activePlace.name} <span className="text-sm font-normal text-gray-500 dark:text-gray-400">({activePlace.subtitle})</span>
                         </p>
                         <p className="text-xs text-purple-600 dark:text-purple-300 font-medium mt-0.5">
-                          ✨ {availability.format} • {availability.time}
+                          ✨ {activeAvailability.format} • {activeAvailability.time}
                         </p>
                       </div>
                     </div>
