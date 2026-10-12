@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { fetchMemories, fetchSelectedGiftPlace } from '@/lib/storage'
-import { places } from '@/data/places'
-import { CalendarDays, Clock, Wallet, MapPin, Info, MessageCircle } from 'lucide-react'
+import { fetchMemories, fetchSelectedGiftPlace, fetchPlaces, recordDateAcceptance } from '@/lib/storage'
+import { Place, evaluatePlaceForDate } from '@/data/places'
+import { CalendarDays, Clock, Wallet, MapPin, Info, MessageCircle, AlertCircle, Sparkles } from 'lucide-react'
 
 export default function GiftInteractive() {
   const [step, setStep] = useState(0)
   const [date, setDate] = useState('')
   const [color, setColor] = useState('')
+  const [allPlaces, setAllPlaces] = useState<Place[]>([])
   const [selectedPlaceId, setSelectedPlaceId] = useState<string>('churros')
   const [cuteFellaPhoto, setCuteFellaPhoto] = useState<string | null>(null)
   const [customMessage, setCustomMessage] = useState('')
@@ -22,6 +23,9 @@ export default function GiftInteractive() {
         setCuteFellaPhoto(giftPhoto.imagePath)
       }
 
+      const placesList = await fetchPlaces()
+      setAllPlaces(placesList)
+
       const savedPlaceId = await fetchSelectedGiftPlace()
       if (savedPlaceId) {
         setSelectedPlaceId(savedPlaceId)
@@ -30,17 +34,62 @@ export default function GiftInteractive() {
     loadData()
   }, [])
 
-  const chosenPlace = places.find(p => p.id === selectedPlaceId) || places[0]
+  const chosenPlace = allPlaces.find(p => p.id === selectedPlaceId) || allPlaces[0] || {
+    id: 'churros',
+    name: 'The Churros',
+    subtitle: 'The Kingsbury Hotel',
+    time: '3:00 PM - 6:00 PM',
+    days: 'Daily',
+    price: 'LKR 3,800 - 5,500',
+    desc: 'Elegant luxury pâtisserie high tea.',
+    ambiance: 'Opulent, luxurious, and grand.',
+    type: 'High Tea',
+    image: 'https://pulse.lk/wp-content/uploads/2024/04/Churros-Kingsbury.jpg',
+    themeClass: 'bg-[#2A1C14] text-[#F3E5D8]',
+    accentClass: 'bg-[#4A3222] text-[#F3E5D8] border-[#8C6D53]',
+    buttonClass: 'bg-[#8C6D53] hover:bg-[#A68365] text-white',
+  }
+
+  // Calculate dynamic schedule & availability for chosen date
+  const availability = evaluatePlaceForDate(chosenPlace, date)
 
   const nextStep = () => setStep(s => s + 1)
   const handleYes = () => setStep(3)
   const handleNo1 = () => setStep(1)
   const handleNo2 = () => setStep(2)
 
+  // Triggered when she clicks "Accept Invitation & View Ticket"
+  const handleAcceptInvitation = async () => {
+    // 1. Record acceptance in database / localStorage
+    const rsvpData = {
+      placeId: chosenPlace.id,
+      placeName: chosenPlace.name,
+      placeSubtitle: chosenPlace.subtitle,
+      date,
+      formattedDate: availability.formattedDate,
+      dayName: availability.dayName,
+      time: availability.time,
+      format: availability.format,
+      price: availability.price,
+      color,
+      acceptedAt: new Date().toISOString()
+    }
+    await recordDateAcceptance(rsvpData)
+
+    // 2. Open WhatsApp message to boyfriend
+    const phoneNumber = "94741999926"
+    const text = `❤️ INVITATION ACCEPTED! ❤️\n\nHey my love! I just accepted your invitation for our 5-Year Anniversary date! 🥰\n\n📍 *Destination:* ${chosenPlace.name} (${chosenPlace.subtitle})\n📅 *Date:* ${availability.formattedDate}\n⏰ *Time:* ${availability.time}\n✨ *Offering:* ${availability.format}\n💳 *Price / Details:* ${availability.price}\n🎨 *Dress Theme:* ${color}\n\nI can't wait to celebrate with you! Mwah! 😘`
+    const encoded = encodeURIComponent(text)
+    window.open(`https://wa.me/${phoneNumber}?text=${encoded}`, '_blank')
+
+    // 3. Move to Ticket
+    nextStep()
+  }
+
   const handleWhatsAppSend = () => {
-    const phoneNumber = "94741999926" 
+    const phoneNumber = "94741999926"
     const placeTitle = `${chosenPlace.name} (${chosenPlace.subtitle})`
-    const baseText = `Hey my love! ❤️\n\nI'm so excited for our 5-Year Anniversary! 🥰\nI'm ready for our date:\n📍 *Where:* ${placeTitle}\n📅 *When:* ${date}\n🎨 *Dress Theme:* ${color}\n\n`
+    const baseText = `Hey my love! ❤️\n\nI'm so excited for our 5-Year Anniversary! 🥰\nI'm ready for our date:\n📍 *Where:* ${placeTitle}\n📅 *When:* ${availability.formattedDate}\n⏰ *Time:* ${availability.time}\n✨ *Offering:* ${availability.format}\n🎨 *Dress Theme:* ${color}\n\n`
     const finalMessage = customMessage.trim() ? `${baseText}*My message to you:* ${customMessage}` : `${baseText}I can't wait to see you! 😘`
     const encodedMessage = encodeURIComponent(finalMessage)
     window.open(`https://wa.me/${phoneNumber}?text=${encodedMessage}`, '_blank')
@@ -191,31 +240,37 @@ export default function GiftInteractive() {
           {step === 5 && (
             <motion.div key="step5" variants={variants} initial="initial" animate="animate" exit="exit" className="w-full max-w-2xl mx-auto px-4">
               <div className="text-center mb-8">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800/50 text-rose-500 dark:text-rose-300 text-xs font-semibold uppercase tracking-widest mb-4">
-                  <span>✨</span> A Special Invitation For You <span>✨</span>
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800/50 text-rose-600 dark:text-rose-300 text-xs font-semibold uppercase tracking-widest mb-4 shadow-sm">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>A Special Invitation For You</span>
+                  <Sparkles className="w-3.5 h-3.5" />
                 </div>
                 <h2 className="font-serif text-3xl md:text-5xl font-bold text-gray-900 dark:text-gray-100 mb-3">
                   I&apos;ve planned everything for us! 🥰
                 </h2>
                 <p className="text-gray-600 dark:text-gray-300 font-medium max-w-lg mx-auto text-sm md:text-base">
-                  You don&apos;t have to worry about a thing. I&apos;ve already chosen our dream spot to celebrate our 5 years and your special day:
+                  You don&apos;t have to worry about a thing. I&apos;ve already verified our date and chosen our dream spot:
                 </p>
               </div>
 
               {/* Reveal Showcase Card */}
               <div className={`relative rounded-[2.5rem] overflow-hidden shadow-2xl border border-white/20 dark:border-white/10 ${chosenPlace.themeClass}`}>
-                {/* Photo & Type Badge */}
+                {/* Photo & Badges */}
                 <div className="relative h-64 md:h-72 w-full overflow-hidden">
                   <img 
                     src={chosenPlace.image} 
                     alt={chosenPlace.name} 
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
                   
-                  <div className="absolute top-4 left-4">
+                  {/* Dynamic Availability Badge */}
+                  <div className="absolute top-4 left-4 flex flex-wrap gap-2">
                     <span className="px-3.5 py-1.5 bg-black/60 backdrop-blur-md text-white text-xs font-bold uppercase tracking-widest rounded-xl border border-white/20">
                       {chosenPlace.type}
+                    </span>
+                    <span className="px-3 py-1.5 bg-rose-500/90 backdrop-blur-md text-white text-xs font-bold rounded-xl shadow-md flex items-center gap-1.5">
+                      {availability.badge}
                     </span>
                   </div>
 
@@ -235,20 +290,42 @@ export default function GiftInteractive() {
                     &quot;{chosenPlace.ambiance}&quot;
                   </p>
 
-                  <div className={`p-4 md:p-5 rounded-2xl border space-y-3 ${chosenPlace.accentClass}`}>
-                    <div className="flex items-center gap-3 text-sm">
-                      <CalendarDays className="w-4 h-4 opacity-75 shrink-0" />
-                      <span><strong>Days:</strong> {chosenPlace.days}</span>
+                  {/* Day-of-Week Specific Evaluated Schedule Box */}
+                  <div className={`p-4 md:p-5 rounded-2xl border space-y-3.5 ${chosenPlace.accentClass}`}>
+                    <div className="flex items-center gap-3 text-sm font-medium">
+                      <CalendarDays className="w-4 h-4 opacity-80 shrink-0 text-rose-400" />
+                      <span><strong>Date Selected:</strong> {availability.formattedDate}</span>
                     </div>
+
                     <div className="flex items-center gap-3 text-sm">
-                      <Clock className="w-4 h-4 opacity-75 shrink-0" />
-                      <span><strong>Hours:</strong> {chosenPlace.time}</span>
+                      <Sparkles className="w-4 h-4 opacity-80 shrink-0 text-amber-400" />
+                      <span><strong>Offering for this Day:</strong> {availability.format}</span>
                     </div>
+
                     <div className="flex items-center gap-3 text-sm">
-                      <Wallet className="w-4 h-4 opacity-75 shrink-0" />
-                      <span><strong>Experience:</strong> {chosenPlace.price}</span>
+                      <Clock className="w-4 h-4 opacity-80 shrink-0 text-sky-400" />
+                      <span><strong>Timings:</strong> {availability.time}</span>
                     </div>
+
+                    <div className="flex items-center gap-3 text-sm">
+                      <Wallet className="w-4 h-4 opacity-80 shrink-0 text-emerald-400" />
+                      <span><strong>Pricing / Experience:</strong> {availability.price}</span>
+                    </div>
+
+                    {availability.note && (
+                      <div className="pt-2 border-t border-white/10 text-xs opacity-90 italic">
+                        💡 {availability.note}
+                      </div>
+                    )}
                   </div>
+
+                  {/* Operational Status Notice */}
+                  {availability.statusMessage && (
+                    <div className="bg-amber-500/10 border border-amber-500/30 p-3.5 rounded-xl text-xs flex items-center gap-2.5 text-amber-200">
+                      <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                      <span>{availability.statusMessage}</span>
+                    </div>
+                  )}
 
                   <div className="pt-2 text-center">
                     <p className="font-cursive text-2xl md:text-3xl opacity-90 mb-6">
@@ -256,11 +333,14 @@ export default function GiftInteractive() {
                     </p>
 
                     <button 
-                      onClick={nextStep} 
+                      onClick={handleAcceptInvitation} 
                       className={`w-full py-4 md:py-5 rounded-full font-bold text-lg shadow-xl transition-all hover:scale-[1.02] flex items-center justify-center gap-2 ${chosenPlace.buttonClass}`}
                     >
                       <span>Accept Invitation &amp; View Ticket</span> 💌
                     </button>
+                    <p className="text-[11px] opacity-70 mt-2">
+                      (Tapping will notify me on WhatsApp and reveal your celebration ticket!)
+                    </p>
                   </div>
                 </div>
               </div>
@@ -301,7 +381,9 @@ export default function GiftInteractive() {
                       </div>
                       <div className="flex-1">
                         <p className="text-xs uppercase tracking-widest text-rose-400 dark:text-rose-500 font-semibold mb-1">When</p>
-                        <p className="font-serif font-bold text-gray-900 dark:text-gray-100 text-lg">{date}</p>
+                        <p className="font-serif font-bold text-gray-900 dark:text-gray-100 text-lg">
+                          {availability.formattedDate}
+                        </p>
                       </div>
                     </div>
 
@@ -310,9 +392,12 @@ export default function GiftInteractive() {
                         <MapPin className="w-6 h-6 text-purple-500 dark:text-purple-400" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs uppercase tracking-widest text-purple-400 dark:text-purple-500 font-semibold mb-1">Where</p>
+                        <p className="text-xs uppercase tracking-widest text-purple-400 dark:text-purple-500 font-semibold mb-1">Where &amp; Format</p>
                         <p className="font-serif font-bold text-gray-900 dark:text-gray-100 text-lg">
                           {chosenPlace.name} <span className="text-sm font-normal text-gray-500 dark:text-gray-400">({chosenPlace.subtitle})</span>
+                        </p>
+                        <p className="text-xs text-purple-600 dark:text-purple-300 font-medium mt-0.5">
+                          ✨ {availability.format} • {availability.time}
                         </p>
                       </div>
                     </div>

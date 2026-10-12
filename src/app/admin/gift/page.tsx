@@ -1,20 +1,64 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { fetchMemories, createMemory, removeMemory, fetchSelectedGiftPlace, saveSelectedGiftPlace } from '@/lib/storage'
+import { 
+  fetchMemories, 
+  createMemory, 
+  removeMemory, 
+  fetchSelectedGiftPlace, 
+  saveSelectedGiftPlace,
+  fetchPlaces,
+  saveCustomPlace,
+  removeCustomPlace,
+  fetchDateAcceptance,
+  clearDateAcceptance,
+  DateRSVP
+} from '@/lib/storage'
 import { Memory } from '@/data/initialData'
-import { places, Place } from '@/data/places'
-import { Upload, Gift, MapPin, Check, Clock, CalendarDays, Wallet, CheckCircle2 } from 'lucide-react'
+import { Place } from '@/data/places'
+import { 
+  Upload, 
+  Gift, 
+  MapPin, 
+  Check, 
+  Clock, 
+  CalendarDays, 
+  Wallet, 
+  CheckCircle2, 
+  Plus, 
+  Trash2, 
+  Sparkles, 
+  Heart, 
+  X,
+  AlertCircle
+} from 'lucide-react'
 
 export default function AdminGiftPage() {
   const [giftMemory, setGiftMemory] = useState<Memory | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState('')
 
-  // Place selection state
+  // Places state
+  const [placesList, setPlacesList] = useState<Place[]>([])
   const [selectedPlaceId, setSelectedPlaceId] = useState<string>('churros')
-  const [isSavingPlace, setIsSavingPlace] = useState(false)
   const [placeMessage, setPlaceMessage] = useState('')
+
+  // RSVP state
+  const [rsvp, setRsvp] = useState<DateRSVP | null>(null)
+
+  // Add Place Form state
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [name, setName] = useState('')
+  const [subtitle, setSubtitle] = useState('')
+  const [type, setType] = useState('High Tea Buffet')
+  const [image, setImage] = useState('')
+  const [ambiance, setAmbiance] = useState('')
+  const [weekdayFormat, setWeekdayFormat] = useState('Platter Service')
+  const [weekdayTime, setWeekdayTime] = useState('3:00 PM - 6:00 PM')
+  const [weekdayPrice, setWeekdayPrice] = useState('LKR 3,800')
+  const [weekendFormat, setWeekendFormat] = useState('Weekend High Tea Buffet')
+  const [weekendTime, setWeekendTime] = useState('3:00 PM - 6:00 PM')
+  const [weekendPrice, setWeekendPrice] = useState('LKR 5,500 nett')
 
   useEffect(() => {
     fetchMemories().then(mems => {
@@ -22,9 +66,11 @@ export default function AdminGiftPage() {
       if (found) setGiftMemory(found)
     })
 
-    fetchSelectedGiftPlace().then(placeId => {
-      setSelectedPlaceId(placeId)
-    })
+    fetchPlaces().then(setPlacesList)
+
+    fetchSelectedGiftPlace().then(setSelectedPlaceId)
+
+    fetchDateAcceptance().then(setRsvp)
   }, [])
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,7 +99,6 @@ export default function AdminGiftPage() {
 
   const handleSelectPlace = async (place: Place) => {
     setSelectedPlaceId(place.id)
-    setIsSavingPlace(true)
     setPlaceMessage('')
     try {
       await saveSelectedGiftPlace(place.id)
@@ -61,21 +106,137 @@ export default function AdminGiftPage() {
       setTimeout(() => setPlaceMessage(''), 4000)
     } catch (err) {
       console.error(err)
-    } finally {
-      setIsSavingPlace(false)
     }
   }
 
-  const currentPlace = places.find(p => p.id === selectedPlaceId) || places[0]
+  const handleCreatePlace = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!name || !image) return
+
+    const newPlace: Place = {
+      id: `custom-${Date.now()}`,
+      name,
+      subtitle: subtitle || 'Colombo',
+      type,
+      image,
+      desc: ambiance,
+      ambiance: ambiance || 'Romantic, beautiful atmosphere made for two.',
+      time: weekdayTime || '3:00 PM - 6:00 PM',
+      days: 'Daily',
+      price: `${weekdayPrice} - ${weekendPrice}`,
+      themeClass: 'bg-[#1E1B18] text-[#F5F2EB]',
+      accentClass: 'bg-[#2E2A24] text-[#E8E1D5] border-[#4A4237]',
+      buttonClass: 'bg-[#D97706] hover:bg-[#B45309] text-white',
+      isCustom: true,
+      scheduleRules: {
+        daysOpen: [0, 1, 2, 3, 4, 5, 6],
+        weekendDays: [5, 6, 0],
+        weekday: {
+          isOpen: true,
+          format: weekdayFormat || 'Weekday Experience',
+          time: weekdayTime || '3:00 PM - 6:00 PM',
+          price: weekdayPrice || 'A la carte'
+        },
+        weekend: {
+          isOpen: true,
+          format: weekendFormat || 'Weekend Buffet / Special',
+          time: weekendTime || '3:00 PM - 6:00 PM',
+          price: weekendPrice || 'Buffet pricing'
+        }
+      }
+    }
+
+    const updated = await saveCustomPlace(newPlace)
+    setPlacesList(updated)
+    setSelectedPlaceId(newPlace.id)
+    await saveSelectedGiftPlace(newPlace.id)
+
+    // Reset Form
+    setName('')
+    setSubtitle('')
+    setImage('')
+    setAmbiance('')
+    setShowAddModal(false)
+    setPlaceMessage(`Added & Selected "${newPlace.name}"! She will be invited here.`)
+  }
+
+  const handleDeletePlace = async (placeId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!confirm('Are you sure you want to remove this custom place?')) return
+    const updated = await removeCustomPlace(placeId)
+    setPlacesList(updated)
+    if (selectedPlaceId === placeId) {
+      setSelectedPlaceId('churros')
+      await saveSelectedGiftPlace('churros')
+    }
+  }
+
+  const handleClearRsvp = async () => {
+    if (confirm('Acknowledge & clear this RSVP alert?')) {
+      await clearDateAcceptance()
+      setRsvp(null)
+    }
+  }
+
+  const currentPlace = placesList.find(p => p.id === selectedPlaceId) || placesList[0]
 
   return (
     <div className="space-y-12 max-w-5xl">
       <div>
-        <h1 className="text-3xl font-serif font-bold text-gray-900 mb-2">Gift & Date Settings</h1>
+        <h1 className="text-3xl font-serif font-bold text-gray-900 mb-2">Gift &amp; Date Settings</h1>
         <p className="text-gray-500 text-sm">
-          Control your surprise date destination and the cute fella backup photo.
+          Select where she will be invited, add custom date spots with weekday/weekend schedules, and view her responses.
         </p>
       </div>
+
+      {/* Live RSVP Alert Banner */}
+      {rsvp && (
+        <div className="bg-gradient-to-r from-rose-500 via-pink-500 to-purple-600 text-white p-6 md:p-8 rounded-3xl shadow-xl space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/20 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-white/20 backdrop-blur-md rounded-2xl">
+                <Heart className="w-6 h-6 text-white fill-white animate-pulse" />
+              </div>
+              <div>
+                <span className="text-xs font-bold uppercase tracking-widest text-rose-200">Live RSVP Alert</span>
+                <h2 className="text-2xl font-serif font-bold">She Accepted Your Date Invitation! 🎉</h2>
+              </div>
+            </div>
+            <button
+              onClick={handleClearRsvp}
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-medium transition-colors border border-white/20 self-start sm:self-auto"
+            >
+              Acknowledge &amp; Clear
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-2">
+            <div className="bg-white/10 p-3.5 rounded-2xl backdrop-blur-sm">
+              <p className="text-[10px] uppercase tracking-wider text-rose-200 font-bold mb-1">Destination</p>
+              <p className="font-serif font-bold text-base leading-tight">{rsvp.placeName}</p>
+              <p className="text-xs text-rose-100/80">{rsvp.placeSubtitle}</p>
+            </div>
+            <div className="bg-white/10 p-3.5 rounded-2xl backdrop-blur-sm">
+              <p className="text-[10px] uppercase tracking-wider text-rose-200 font-bold mb-1">Chosen Date</p>
+              <p className="font-serif font-bold text-base leading-tight">{rsvp.formattedDate}</p>
+            </div>
+            <div className="bg-white/10 p-3.5 rounded-2xl backdrop-blur-sm">
+              <p className="text-[10px] uppercase tracking-wider text-rose-200 font-bold mb-1">Offering &amp; Time</p>
+              <p className="font-serif font-bold text-base leading-tight">{rsvp.format}</p>
+              <p className="text-xs text-rose-100/80">{rsvp.time}</p>
+            </div>
+            <div className="bg-white/10 p-3.5 rounded-2xl backdrop-blur-sm">
+              <p className="text-[10px] uppercase tracking-wider text-rose-200 font-bold mb-1">Dress Theme</p>
+              <p className="font-serif font-bold text-base leading-tight">{rsvp.color}</p>
+              <p className="text-xs text-rose-100/80">{rsvp.price}</p>
+            </div>
+          </div>
+
+          <p className="text-xs text-rose-100/70 pt-1">
+            Accepted at {new Date(rsvp.acceptedAt).toLocaleString()}. WhatsApp was also prompted on her phone.
+          </p>
+        </div>
+      )}
 
       {/* Date Destination Selector */}
       <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 space-y-6">
@@ -84,17 +245,28 @@ export default function AdminGiftPage() {
             <div className="flex items-center gap-2 mb-1">
               <MapPin className="w-6 h-6 text-rose-500" />
               <h2 className="text-xl font-serif font-bold text-gray-900">
-                Date Destination (Where You Are Taking Her)
+                Date Destination (Where She Will Be Invited)
               </h2>
             </div>
             <p className="text-sm text-gray-500 max-w-2xl">
-              Choose the spot below. She will <strong>not</strong> be asked to choose—once she completes the date & dress color steps, she will receive a special surprise invitation to this exact spot!
+              Choose the spot below. The app will <strong>automatically check the day of the week</strong> she selects to display the exact operating hours, buffet availability, and pricing for that day!
             </p>
           </div>
 
-          <div className="flex items-center gap-2 bg-rose-50 border border-rose-100 px-4 py-2.5 rounded-2xl shrink-0">
-            <span className="text-xs font-bold uppercase tracking-wider text-rose-600">Active Choice:</span>
-            <span className="font-serif font-bold text-gray-900 text-sm">{currentPlace.name}</span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-black text-white text-xs font-semibold rounded-2xl shadow-sm transition-all hover:scale-105"
+            >
+              <Plus className="w-4 h-4" /> Add New Place
+            </button>
+
+            {currentPlace && (
+              <div className="flex items-center gap-2 bg-rose-50 border border-rose-100 px-4 py-2.5 rounded-2xl shrink-0">
+                <span className="text-xs font-bold uppercase tracking-wider text-rose-600">Active:</span>
+                <span className="font-serif font-bold text-gray-900 text-sm">{currentPlace.name}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -106,8 +278,9 @@ export default function AdminGiftPage() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {places.map((p) => {
+          {placesList.map((p) => {
             const isSelected = p.id === selectedPlaceId
+            const rules = p.scheduleRules
 
             return (
               <div 
@@ -126,11 +299,18 @@ export default function AdminGiftPage() {
                     alt={p.name} 
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
                   
-                  <span className="absolute top-3 left-3 px-2.5 py-1 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider rounded-lg">
-                    {p.type}
-                  </span>
+                  <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                    <span className="px-2.5 py-1 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold uppercase tracking-wider rounded-lg">
+                      {p.type}
+                    </span>
+                    {p.isCustom && (
+                      <span className="px-2 py-0.5 bg-amber-500 text-white text-[9px] font-bold uppercase tracking-wider rounded-md">
+                        Custom
+                      </span>
+                    )}
+                  </div>
 
                   {isSelected && (
                     <span className="absolute top-3 right-3 px-3 py-1 bg-rose-500 text-white text-xs font-bold rounded-full shadow-lg flex items-center gap-1">
@@ -138,31 +318,46 @@ export default function AdminGiftPage() {
                     </span>
                   )}
 
-                  <div className="absolute bottom-3 left-3 text-white">
+                  {p.isCustom && !isSelected && (
+                    <button
+                      onClick={(e) => handleDeletePlace(p.id, e)}
+                      className="absolute top-3 right-3 p-1.5 bg-red-500/80 hover:bg-red-600 text-white rounded-full transition-colors"
+                      title="Delete custom place"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+
+                  <div className="absolute bottom-3 left-3 right-3 text-white">
                     <h3 className="font-serif text-lg font-bold leading-tight">{p.name}</h3>
                     <p className="text-xs text-white/80">{p.subtitle}</p>
                   </div>
                 </div>
 
-                {/* Details */}
+                {/* Details & Schedules */}
                 <div className="p-4 space-y-3 flex-1 flex flex-col justify-between bg-white">
                   <p className="text-xs text-gray-600 italic line-clamp-2">
                     &quot;{p.ambiance}&quot;
                   </p>
 
-                  <div className="space-y-1.5 pt-2 border-t border-gray-100 text-xs text-gray-500">
-                    <div className="flex items-center gap-2">
-                      <CalendarDays className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                      <span className="line-clamp-1">{p.days}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                      <span className="line-clamp-1">{p.time}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Wallet className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                      <span className="line-clamp-1">{p.price}</span>
-                    </div>
+                  {/* Weekday vs Weekend Schedule breakdown */}
+                  <div className="space-y-1.5 pt-2 border-t border-gray-100 text-[11px] text-gray-600 bg-gray-50/70 p-2.5 rounded-xl">
+                    {rules?.weekday && (
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="font-semibold text-gray-700">Mon–Thu:</span>
+                        <span className="text-right text-gray-600">
+                          {rules.weekday.format} ({rules.weekday.price})
+                        </span>
+                      </div>
+                    )}
+                    {rules?.weekend && (
+                      <div className="flex items-start justify-between gap-2 border-t border-gray-200/60 pt-1">
+                        <span className="font-semibold text-rose-600">Fri–Sun:</span>
+                        <span className="text-right text-rose-700 font-medium">
+                          {rules.weekend.format} ({rules.weekend.price})
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <button
@@ -191,6 +386,176 @@ export default function AdminGiftPage() {
           })}
         </div>
       </div>
+
+      {/* Add Custom Place Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 md:p-8 space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar shadow-2xl">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+              <h3 className="font-serif text-2xl font-bold text-gray-900">Add New Date Destination</h3>
+              <button onClick={() => setShowAddModal(false)} className="p-2 text-gray-400 hover:text-gray-600 rounded-full">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreatePlace} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Place Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Cinnamon Grand Coffee Stop"
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Subtitle / Location</label>
+                  <input
+                    type="text"
+                    value={subtitle}
+                    onChange={(e) => setSubtitle(e.target.value)}
+                    placeholder="e.g. Galle Face, Colombo"
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-200"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Type / Category</label>
+                  <select
+                    value={type}
+                    onChange={(e) => setType(e.target.value)}
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-200"
+                  >
+                    <option value="High Tea Buffet">High Tea Buffet</option>
+                    <option value="High Tea Platter">High Tea Platter</option>
+                    <option value="Brunch & Cafe">Brunch &amp; Cafe</option>
+                    <option value="Halal High Tea">Halal High Tea</option>
+                    <option value="Halal Cafe">Halal Cafe</option>
+                    <option value="Romantic Dinner">Romantic Dinner</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Photo Image URL *</label>
+                  <input
+                    type="url"
+                    required
+                    value={image}
+                    onChange={(e) => setImage(e.target.value)}
+                    placeholder="https://images.unsplash.com/..."
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-200"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Ambiance &amp; Vibe Quote</label>
+                <textarea
+                  value={ambiance}
+                  onChange={(e) => setAmbiance(e.target.value)}
+                  placeholder="Luxurious, warm lighting, cozy corner for deep conversations..."
+                  rows={2}
+                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-200"
+                />
+              </div>
+
+              {/* Weekday Schedule Rules */}
+              <div className="p-4 bg-gray-50 rounded-2xl space-y-3 border border-gray-100">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700">Weekday Schedule (Mon–Thu)</h4>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[10px] text-gray-500 mb-1">Format</label>
+                    <input
+                      type="text"
+                      value={weekdayFormat}
+                      onChange={(e) => setWeekdayFormat(e.target.value)}
+                      placeholder="Platter Service"
+                      className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-gray-500 mb-1">Hours</label>
+                    <input
+                      type="text"
+                      value={weekdayTime}
+                      onChange={(e) => setWeekdayTime(e.target.value)}
+                      placeholder="3:00 PM - 6:00 PM"
+                      className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-gray-500 mb-1">Price</label>
+                    <input
+                      type="text"
+                      value={weekdayPrice}
+                      onChange={(e) => setWeekdayPrice(e.target.value)}
+                      placeholder="LKR 3,800"
+                      className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Weekend Schedule Rules */}
+              <div className="p-4 bg-rose-50/50 rounded-2xl space-y-3 border border-rose-100">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-rose-700">Weekend Schedule (Fri–Sun)</h4>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[10px] text-gray-500 mb-1">Format</label>
+                    <input
+                      type="text"
+                      value={weekendFormat}
+                      onChange={(e) => setWeekendFormat(e.target.value)}
+                      placeholder="Weekend Buffet"
+                      className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-gray-500 mb-1">Hours</label>
+                    <input
+                      type="text"
+                      value={weekendTime}
+                      onChange={(e) => setWeekendTime(e.target.value)}
+                      placeholder="3:00 PM - 6:00 PM"
+                      className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] text-gray-500 mb-1">Price</label>
+                    <input
+                      type="text"
+                      value={weekendPrice}
+                      onChange={(e) => setWeekendPrice(e.target.value)}
+                      placeholder="LKR 5,500 nett"
+                      className="w-full px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-5 py-2.5 rounded-xl text-sm text-gray-600 hover:bg-gray-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-sm font-semibold shadow-md"
+                >
+                  Save &amp; Select Place
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Cute Fella Photo */}
       <div className="bg-white p-6 md:p-8 rounded-3xl shadow-sm border border-gray-100 max-w-2xl">

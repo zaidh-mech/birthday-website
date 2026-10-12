@@ -1,5 +1,6 @@
 import { initialLetters, initialMemories, Letter, Memory } from '@/data/initialData'
 import { getSupabaseClient, uploadImageToSupabase } from './supabase'
+import { places as defaultPlaces, Place } from '@/data/places'
 
 const LETTERS_KEY = 'birthday_letters_data'
 const MEMORIES_KEY = 'birthday_memories_data'
@@ -552,4 +553,219 @@ export async function saveSelectedGiftPlace(placeId: string): Promise<void> {
     localStorage.setItem(GIFT_PLACE_KEY, placeId)
   }
 }
+
+// Custom Places Storage
+const CUSTOM_PLACES_KEY = 'birthday_custom_places_data'
+
+export async function fetchPlaces(): Promise<Place[]> {
+  let custom: Place[] = []
+  const supabase = getSupabaseClient()
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('letters')
+        .select('*')
+        .eq('title', '[CUSTOM_PLACES]')
+        .single()
+      if (!error && data && data.content) {
+        custom = JSON.parse(data.content)
+      }
+    } catch (e) {
+      console.warn('Supabase fetch custom places failed:', e)
+    }
+  }
+
+  if (custom.length === 0 && typeof window !== 'undefined') {
+    const local = localStorage.getItem(CUSTOM_PLACES_KEY)
+    if (local) {
+      try {
+        custom = JSON.parse(local)
+      } catch {}
+    }
+  }
+
+  return [...defaultPlaces, ...custom]
+}
+
+export async function saveCustomPlace(newPlace: Place): Promise<Place[]> {
+  const allCurrent = await fetchPlaces()
+  const customOnly = allCurrent.filter(p => p.isCustom)
+  const updatedCustom = [...customOnly, { ...newPlace, isCustom: true }]
+  const serialized = JSON.stringify(updatedCustom)
+
+  const supabase = getSupabaseClient()
+  if (supabase) {
+    try {
+      const { data } = await supabase
+        .from('letters')
+        .select('id')
+        .eq('title', '[CUSTOM_PLACES]')
+        .single()
+
+      if (data) {
+        await supabase
+          .from('letters')
+          .update({ content: serialized, date: new Date().toISOString() })
+          .eq('id', data.id)
+      } else {
+        await supabase
+          .from('letters')
+          .insert({
+            title: '[CUSTOM_PLACES]',
+            content: serialized,
+            occasion: 'places',
+            date: new Date().toISOString()
+          })
+      }
+    } catch (e) {
+      console.warn('Supabase save custom places failed:', e)
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(CUSTOM_PLACES_KEY, serialized)
+  }
+
+  return [...defaultPlaces, ...updatedCustom]
+}
+
+export async function removeCustomPlace(placeId: string): Promise<Place[]> {
+  const allCurrent = await fetchPlaces()
+  const customOnly = allCurrent.filter(p => p.isCustom && p.id !== placeId)
+  const serialized = JSON.stringify(customOnly)
+
+  const supabase = getSupabaseClient()
+  if (supabase) {
+    try {
+      const { data } = await supabase
+        .from('letters')
+        .select('id')
+        .eq('title', '[CUSTOM_PLACES]')
+        .single()
+
+      if (data) {
+        await supabase
+          .from('letters')
+          .update({ content: serialized, date: new Date().toISOString() })
+          .eq('id', data.id)
+      }
+    } catch (e) {
+      console.warn('Supabase remove custom place failed:', e)
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(CUSTOM_PLACES_KEY, serialized)
+  }
+
+  return [...defaultPlaces, ...customOnly]
+}
+
+// Date Acceptance / RSVP Storage
+export interface DateRSVP {
+  placeId: string
+  placeName: string
+  placeSubtitle: string
+  date: string
+  formattedDate: string
+  dayName: string
+  time: string
+  format: string
+  price: string
+  color: string
+  acceptedAt: string
+  customMessage?: string
+}
+
+const DATE_RSVP_KEY = 'birthday_date_rsvp_data'
+
+export async function recordDateAcceptance(rsvp: DateRSVP): Promise<void> {
+  const serialized = JSON.stringify(rsvp)
+  const supabase = getSupabaseClient()
+
+  if (supabase) {
+    try {
+      const { data } = await supabase
+        .from('letters')
+        .select('id')
+        .eq('title', '[DATE_RSVP]')
+        .single()
+
+      if (data) {
+        await supabase
+          .from('letters')
+          .update({ content: serialized, date: new Date().toISOString() })
+          .eq('id', data.id)
+      } else {
+        await supabase
+          .from('letters')
+          .insert({
+            title: '[DATE_RSVP]',
+            content: serialized,
+            occasion: 'rsvp',
+            date: new Date().toISOString()
+          })
+      }
+    } catch (e) {
+      console.warn('Supabase record RSVP failed:', e)
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(DATE_RSVP_KEY, serialized)
+  }
+}
+
+export async function fetchDateAcceptance(): Promise<DateRSVP | null> {
+  const supabase = getSupabaseClient()
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('letters')
+        .select('*')
+        .eq('title', '[DATE_RSVP]')
+        .single()
+      if (!error && data && data.content) {
+        return JSON.parse(data.content)
+      }
+    } catch (e) {
+      console.warn('Supabase fetch RSVP failed:', e)
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    const local = localStorage.getItem(DATE_RSVP_KEY)
+    if (local) {
+      try {
+        return JSON.parse(local)
+      } catch {}
+    }
+  }
+
+  return null
+}
+
+export async function clearDateAcceptance(): Promise<void> {
+  const supabase = getSupabaseClient()
+  if (supabase) {
+    try {
+      const { data } = await supabase
+        .from('letters')
+        .select('id')
+        .eq('title', '[DATE_RSVP]')
+        .single()
+      if (data) {
+        await supabase.from('letters').delete().eq('id', data.id)
+      }
+    } catch (e) {
+      console.warn('Supabase clear RSVP failed:', e)
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(DATE_RSVP_KEY)
+  }
+}
+
 
