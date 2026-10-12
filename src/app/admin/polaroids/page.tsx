@@ -117,30 +117,14 @@ export default function AdminPolaroidsPage() {
         <div className="lg:col-span-2">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
             {polaroids.map((p) => (
-              <div 
-                key={p.id} 
-                className="bg-white p-3 pb-4 rounded-sm shadow-md border border-gray-100 relative group flex flex-col justify-between w-full"
-              >
-                {/* Uniform 3:4 Portrait Polaroid Photo Window (Matches Smartphone Photos) */}
-                <div className="w-full aspect-[3/4] bg-gray-100 overflow-hidden relative rounded-xs shrink-0">
-                  <img 
-                    src={p.imagePath} 
-                    alt={p.caption} 
-                    className="absolute inset-0 w-full h-full object-cover object-center" 
-                  />
-                </div>
-                
-                {/* Uniform Height Polaroid Chin for Caption */}
-                <div className="h-10 flex items-center justify-center px-1 mt-2.5 overflow-hidden">
-                  <p className="font-serif text-center text-xs md:text-sm text-gray-700 line-clamp-2">
-                    {p.caption || ''}
-                  </p>
-                </div>
-
+              <div key={p.id} className="bg-white p-3 pb-8 rounded-sm shadow-md border border-gray-100 relative group aspect-[3/4] flex flex-col">
+                <img src={p.imagePath} alt={p.caption} className="w-full flex-1 object-cover" />
+                {p.caption && (
+                  <p className="font-serif text-center text-sm text-gray-700 mt-3 absolute bottom-2 left-0 right-0">{p.caption}</p>
+                )}
                 <button 
                   onClick={() => handleDelete(p.id)}
-                  className="absolute -top-2.5 -right-2.5 bg-red-500 text-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 z-10"
-                  title="Delete polaroid"
+                  className="absolute -top-3 -right-3 bg-red-500 text-white p-2 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
