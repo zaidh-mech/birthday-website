@@ -461,12 +461,17 @@ export async function createPolaroid(data: Omit<Polaroid, 'id' | 'createdAt'>, f
       }]).select().single()
       
       if (!error && insertedData) {
-        return {
+        const item = {
           id: insertedData.id,
           imagePath: insertedData.image_url,
           caption: insertedData.caption || '',
           createdAt: new Date(insertedData.created_at).getTime()
         }
+        if (typeof window !== 'undefined') {
+          const existing = await fetchPolaroids();
+          localStorage.setItem(POLAROIDS_KEY, JSON.stringify([item, ...existing.filter(p => p.id !== item.id)]));
+        }
+        return item
       }
     }
   }
@@ -476,6 +481,63 @@ export async function createPolaroid(data: Omit<Polaroid, 'id' | 'createdAt'>, f
     localStorage.setItem(POLAROIDS_KEY, JSON.stringify([newPolaroid, ...existing]));
   }
   return newPolaroid;
+}
+
+export async function updatePolaroid(
+  id: string,
+  updates: { caption?: string; imagePath?: string },
+  file?: File | null
+): Promise<Polaroid> {
+  const supabase = getSupabaseClient()
+  let finalImagePath = updates.imagePath
+
+  if (file && supabase) {
+    try {
+      finalImagePath = await uploadImageToSupabase(file)
+    } catch (e) {
+      console.warn('Upload image to Supabase failed during update:', e)
+    }
+  }
+
+  if (supabase) {
+    try {
+      const updateData: any = {}
+      if (updates.caption !== undefined) updateData.caption = updates.caption
+      if (finalImagePath) updateData.image_url = finalImagePath
+
+      await supabase
+        .from('polaroids')
+        .update(updateData)
+        .eq('id', id)
+    } catch (e) {
+      console.warn('Supabase update polaroid failed:', e)
+    }
+  }
+
+  let updatedPolaroid: Polaroid = {
+    id,
+    imagePath: finalImagePath || '',
+    caption: updates.caption || '',
+    createdAt: Date.now()
+  }
+
+  if (typeof window !== 'undefined') {
+    const local = await fetchPolaroids()
+    const index = local.findIndex(p => p.id === id)
+    if (index !== -1) {
+      updatedPolaroid = {
+        ...local[index],
+        caption: updates.caption !== undefined ? updates.caption : local[index].caption,
+        imagePath: finalImagePath || local[index].imagePath
+      }
+      local[index] = updatedPolaroid
+      localStorage.setItem(POLAROIDS_KEY, JSON.stringify(local))
+    } else {
+      localStorage.setItem(POLAROIDS_KEY, JSON.stringify([updatedPolaroid, ...local]))
+    }
+  }
+
+  return updatedPolaroid
 }
 
 export async function removePolaroid(id: string): Promise<void> {
