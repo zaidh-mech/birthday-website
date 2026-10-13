@@ -102,7 +102,7 @@ export default function AdminGiftPage() {
     setPlaceMessage('')
     try {
       await saveSelectedGiftPlace(place.id)
-      setPlaceMessage(`Locked in "${place.name}"! She will be invited here.`)
+      setPlaceMessage(`Set "${place.name}" as featured pick! She can choose from all available spots on her date.`)
       setTimeout(() => setPlaceMessage(''), 4000)
     } catch (err) {
       console.error(err)
@@ -157,7 +157,7 @@ export default function AdminGiftPage() {
     setImage('')
     setAmbiance('')
     setShowAddModal(false)
-    setPlaceMessage(`Added & Selected "${newPlace.name}"! She will be invited here.`)
+    setPlaceMessage(`Added "${newPlace.name}" to catalog! She will see it among available spots on her date.`)
   }
 
   const handleDeletePlace = async (placeId: string, e: React.MouseEvent) => {
@@ -245,11 +245,11 @@ export default function AdminGiftPage() {
             <div className="flex items-center gap-2 mb-1">
               <MapPin className="w-6 h-6 text-rose-500" />
               <h2 className="text-xl font-serif font-bold text-gray-900">
-                Date Destination (Where She Will Be Invited)
+                Date Destinations Catalog (Available for Her to Choose)
               </h2>
             </div>
             <p className="text-sm text-gray-500 max-w-2xl">
-              Choose the spot below. The app will <strong>automatically check the day of the week</strong> she selects to display the exact operating hours, buffet availability, and pricing for that day!
+              All active places below are presented to her on her surprise page! The app <strong>automatically evaluates the day of the week</strong> she selects to display the exact operating hours, live buffets, platters, and pricing for that day so she can choose her dream spot.
             </p>
           </div>
 
@@ -260,13 +260,6 @@ export default function AdminGiftPage() {
             >
               <Plus className="w-4 h-4" /> Add New Place
             </button>
-
-            {currentPlace && (
-              <div className="flex items-center gap-2 bg-rose-50 border border-rose-100 px-4 py-2.5 rounded-2xl shrink-0">
-                <span className="text-xs font-bold uppercase tracking-wider text-rose-600">Active:</span>
-                <span className="font-serif font-bold text-gray-900 text-sm">{currentPlace.name}</span>
-              </div>
-            )}
           </div>
         </div>
 
@@ -374,10 +367,10 @@ export default function AdminGiftPage() {
                   >
                     {isSelected ? (
                       <>
-                        <Check className="w-4 h-4" /> Destination Locked In
+                        <Check className="w-4 h-4" /> Featured Pick
                       </>
                     ) : (
-                      'Select This Destination'
+                      'Set as Featured Pick'
                     )}
                   </button>
                 </div>
