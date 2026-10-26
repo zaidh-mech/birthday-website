@@ -45,7 +45,7 @@ export default function Home() {
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1, delay: 0.5 + index * 0.2 }}
-          className={`absolute z-0 w-28 md:w-40 bg-white p-2 md:p-3 pb-8 md:pb-12 rounded-sm shadow-xl border border-gray-100 transition-all duration-500 hover:z-50 hover:scale-125 hover:rotate-0 hover:shadow-2xl ${polaroidPositions[index % polaroidPositions.length]}`}
+          className={`absolute z-0 w-32 sm:w-36 md:w-44 bg-white p-2 md:p-3 rounded-sm shadow-xl border border-gray-100 transition-all duration-500 hover:z-50 hover:scale-125 hover:rotate-0 hover:shadow-2xl flex flex-col ${polaroidPositions[index % polaroidPositions.length]}`}
         >
           <div className="w-full aspect-[3/4] bg-gray-100 overflow-hidden relative">
             <img 
@@ -55,9 +55,11 @@ export default function Home() {
             />
           </div>
           {polaroid.caption && (
-            <p className="absolute bottom-2 md:bottom-3 left-0 right-0 text-center font-serif text-[10px] md:text-xs text-gray-700 px-2 line-clamp-1">
-              {polaroid.caption}
-            </p>
+            <div className="pt-2 pb-1 px-1 min-h-[2.25rem] md:min-h-[3rem] flex items-center justify-center">
+              <p className="text-center font-serif text-[10px] md:text-xs text-gray-700 leading-tight break-words line-clamp-3">
+                {polaroid.caption}
+              </p>
+            </div>
           )}
         </motion.div>
       ))}

@@ -205,17 +205,23 @@ export default function AdminPolaroidsPage() {
                 <div 
                   key={p.id} 
                   onClick={() => handleEdit(p)}
-                  className={`bg-white p-3 pb-8 rounded-sm shadow-md border relative group aspect-[3/4] flex flex-col cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-xl ${
+                  className={`bg-white p-3 rounded-sm shadow-md border relative group flex flex-col cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-xl ${
                     isSelected 
                       ? 'ring-4 ring-rose-400 border-rose-300 shadow-xl -translate-y-1 bg-rose-50/20' 
                       : 'border-gray-100 hover:border-rose-200'
                   }`}
                 >
-                  <img src={p.imagePath} alt={p.caption} className="w-full flex-1 object-cover" />
-                  {p.caption && (
-                    <p className="font-serif text-center text-sm text-gray-700 mt-3 absolute bottom-2 left-0 right-0 px-2 line-clamp-1">
-                      {p.caption}
-                    </p>
+                  <div className="w-full aspect-[3/4] bg-gray-100 overflow-hidden relative rounded-xs">
+                    <img src={p.imagePath} alt={p.caption} className="w-full h-full object-cover" />
+                  </div>
+                  {p.caption ? (
+                    <div className="pt-3 pb-1 px-1 min-h-[2.5rem] flex items-center justify-center">
+                      <p className="font-serif text-center text-xs text-gray-700 leading-tight break-words line-clamp-3">
+                        {p.caption}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="py-2" />
                   )}
 
                   {/* Active Editing indicator */}
