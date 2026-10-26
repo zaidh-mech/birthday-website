@@ -490,21 +490,72 @@ const POLAROIDS_KEY = 'birthday_polaroids_data';
 
 export async function fetchPolaroids(): Promise<Polaroid[]> {
   const supabase = getSupabaseClient()
+  let cloudPolaroids: Polaroid[] = []
+
   if (supabase) {
-    const { data, error } = await supabase.from('polaroids').select('*').order('created_at', { ascending: false })
-    if (!error && data && data.length > 0) {
-      return data.map(row => ({
-        id: row.id,
-        imagePath: row.image_url,
-        caption: row.caption || '',
-        createdAt: new Date(row.created_at).getTime()
-      }))
+    try {
+      const { data, error } = await supabase.from('polaroids').select('*').order('created_at', { ascending: false })
+      if (!error && data) {
+        cloudPolaroids = data.map(row => ({
+          id: row.id,
+          imagePath: row.image_url,
+          caption: row.caption || '',
+          createdAt: new Date(row.created_at).getTime()
+        }))
+      }
+    } catch (e) {
+      console.warn('Supabase fetch polaroids failed:', e)
     }
   }
   
-  if (typeof window === 'undefined') return [];
-  const stored = localStorage.getItem(POLAROIDS_KEY);
-  return stored ? JSON.parse(stored) : [];
+  let localPolaroids: Polaroid[] = []
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem(POLAROIDS_KEY)
+    if (stored) {
+      try {
+        localPolaroids = JSON.parse(stored)
+      } catch {}
+    }
+  }
+
+  // Find any local polaroids that haven't been synced to Supabase yet
+  const cloudIds = new Set(cloudPolaroids.map(p => p.id))
+  const cloudImageUrls = new Set(cloudPolaroids.map(p => p.imagePath))
+  const unsynced = localPolaroids.filter(p => !cloudIds.has(p.id) && !cloudImageUrls.has(p.imagePath))
+
+  // Auto-sync earlier local polaroids to cloud so they appear on all devices
+  if (unsynced.length > 0 && supabase) {
+    for (const p of unsynced) {
+      try {
+        await supabase.from('polaroids').insert([{
+          id: p.id,
+          image_url: p.imagePath,
+          caption: p.caption,
+          created_at: new Date(p.createdAt).toISOString()
+        }])
+        cloudPolaroids.push(p)
+      } catch (err) {
+        console.warn('Failed to auto-sync polaroid to cloud:', err)
+      }
+    }
+  }
+
+  // Combine both lists (cloud and local)
+  const combinedMap = new Map<string, Polaroid>()
+  for (const p of localPolaroids) {
+    combinedMap.set(p.id, p)
+  }
+  for (const p of cloudPolaroids) {
+    combinedMap.set(p.id, p)
+  }
+
+  const result = Array.from(combinedMap.values()).sort((a, b) => b.createdAt - a.createdAt)
+
+  if (typeof window !== 'undefined' && result.length > 0) {
+    localStorage.setItem(POLAROIDS_KEY, JSON.stringify(result))
+  }
+
+  return result
 }
 
 export async function createPolaroid(data: Omit<Polaroid, 'id' | 'createdAt'>, file?: File): Promise<Polaroid> {
@@ -516,38 +567,80 @@ export async function createPolaroid(data: Omit<Polaroid, 'id' | 'createdAt'>, f
   }
 
   const supabase = getSupabaseClient()
-  if (supabase && file) {
-    const publicUrl = await uploadImageToSupabase(file)
-    if (publicUrl) {
-      newPolaroid.imagePath = publicUrl
-      const { data: insertedData, error } = await supabase.from('polaroids').insert([{
-        id: newPolaroid.id,
-        image_url: newPolaroid.imagePath,
-        caption: newPolaroid.caption,
-        created_at: new Date(newPolaroid.createdAt).toISOString()
-      }]).select().single()
-      
-      if (!error && insertedData) {
-        const item = {
-          id: insertedData.id,
-          imagePath: insertedData.image_url,
-          caption: insertedData.caption || '',
-          createdAt: new Date(insertedData.created_at).getTime()
+  if (supabase) {
+    try {
+      if (file) {
+        const publicUrl = await uploadImageToSupabase(file)
+        if (publicUrl) {
+          newPolaroid.imagePath = publicUrl
         }
-        if (typeof window !== 'undefined') {
-          const existing = await fetchPolaroids();
-          localStorage.setItem(POLAROIDS_KEY, JSON.stringify([item, ...existing.filter(p => p.id !== item.id)]));
-        }
-        return item
       }
+      if (newPolaroid.imagePath) {
+        const { data: insertedData, error } = await supabase.from('polaroids').insert([{
+          id: newPolaroid.id,
+          image_url: newPolaroid.imagePath,
+          caption: newPolaroid.caption,
+          created_at: new Date(newPolaroid.createdAt).toISOString()
+        }]).select().single()
+
+        if (!error && insertedData) {
+          const item = {
+            id: insertedData.id,
+            imagePath: insertedData.image_url,
+            caption: insertedData.caption || '',
+            createdAt: new Date(insertedData.created_at).getTime()
+          }
+          if (typeof window !== 'undefined') {
+            const existing = await fetchPolaroids()
+            localStorage.setItem(POLAROIDS_KEY, JSON.stringify([item, ...existing.filter(p => p.id !== item.id)]))
+          }
+          return item
+        }
+      }
+    } catch (e) {
+      console.warn('Supabase create polaroid error:', e)
     }
   }
 
   if (typeof window !== 'undefined') {
-    const existing = await fetchPolaroids();
-    localStorage.setItem(POLAROIDS_KEY, JSON.stringify([newPolaroid, ...existing]));
+    const existing = await fetchPolaroids()
+    localStorage.setItem(POLAROIDS_KEY, JSON.stringify([newPolaroid, ...existing]))
   }
-  return newPolaroid;
+  return newPolaroid
+}
+
+export async function recoverPolaroidsFromStorage(): Promise<number> {
+  const supabase = getSupabaseClient()
+  if (!supabase) return 0
+  try {
+    const { data: files, error } = await supabase.storage.from('memories').list()
+    if (error || !files) return 0
+
+    const current = await fetchPolaroids()
+    const existingUrls = new Set(current.map(p => p.imagePath))
+
+    let recoveredCount = 0
+    for (const file of files) {
+      if (file.name.startsWith('.')) continue
+      const { data: urlData } = supabase.storage.from('memories').getPublicUrl(file.name)
+      const publicUrl = urlData?.publicUrl
+      if (publicUrl && !existingUrls.has(publicUrl)) {
+        const id = Math.random().toString(36).substring(2, 9)
+        const dateStr = file.created_at || new Date().toISOString()
+        await supabase.from('polaroids').insert([{
+          id,
+          image_url: publicUrl,
+          caption: 'Special Memory',
+          created_at: dateStr
+        }])
+        recoveredCount++
+      }
+    }
+    return recoveredCount
+  } catch (e) {
+    console.warn('Error recovering polaroids from storage:', e)
+    return 0
+  }
 }
 
 export async function updatePolaroid(
