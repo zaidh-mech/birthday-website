@@ -177,7 +177,6 @@ const isPolaroidPhoto = (path: string) =>
 
 export async function fetchMemories(): Promise<Memory[]> {
   const supabase = getSupabaseClient()
-  let cloudMemories: Memory[] = []
 
   if (supabase) {
     try {
@@ -187,7 +186,7 @@ export async function fetchMemories(): Promise<Memory[]> {
         .order('date', { ascending: false })
 
       if (!error && data) {
-        cloudMemories = data
+        let cloudMemories = data
           .filter((item: any) => !isPolaroidPhoto(item.image_path || ''))
           .map((item: any) => ({
             id: String(item.id),
@@ -196,6 +195,17 @@ export async function fetchMemories(): Promise<Memory[]> {
             imagePath: item.image_path || item.imagePath,
             date: item.date || item.created_at,
           }))
+
+        const hasCustom = cloudMemories.some(m => !m.imagePath.includes('images.unsplash.com'))
+        if (hasCustom) {
+          cloudMemories = cloudMemories.filter(m => !m.imagePath.includes('images.unsplash.com'))
+        }
+
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(MEMORIES_KEY, JSON.stringify(cloudMemories))
+        }
+
+        return cloudMemories.length > 0 ? cloudMemories : initialMemories
       }
     } catch (e) {
       console.warn('Supabase fetch memories failed, using local storage:', e)
@@ -212,69 +222,11 @@ export async function fetchMemories(): Promise<Memory[]> {
     }
   }
 
-  // Strictly exclude polaroid photos from local memories
   localMemories = localMemories.filter(m => !isPolaroidPhoto(m.imagePath))
-
-  // Find any local memories that haven't been synced to Supabase yet
-  const cloudIds = new Set(cloudMemories.map(m => m.id))
-  const cloudImages = new Set(cloudMemories.map(m => m.imagePath))
-  const unsynced = localMemories.filter(m => 
-    !cloudIds.has(m.id) && 
-    !cloudImages.has(m.imagePath) && 
-    !m.imagePath.includes('images.unsplash.com') &&
-    !isPolaroidPhoto(m.imagePath)
-  )
-
-  // Auto-sync earlier local memories to Supabase
-  if (unsynced.length > 0 && supabase) {
-    for (const m of unsynced) {
-      try {
-        const { data: inserted, error: insertError } = await supabase
-          .from('memories')
-          .insert({
-            title: m.title,
-            caption: m.caption,
-            image_path: m.imagePath,
-            date: m.date || new Date().toISOString(),
-          })
-          .select()
-          .single()
-
-        if (!insertError && inserted) {
-          cloudMemories.push({
-            id: String(inserted.id),
-            title: inserted.title,
-            caption: inserted.caption,
-            imagePath: inserted.image_path,
-            date: inserted.date || inserted.created_at,
-          })
-        }
-      } catch (err) {
-        console.warn('Failed to auto-sync memory to Supabase:', err)
-      }
-    }
-  }
-
-  // Combine both lists
-  const combinedMap = new Map<string, Memory>()
-  for (const m of localMemories) {
-    combinedMap.set(m.id, m)
-  }
-  for (const m of cloudMemories) {
-    combinedMap.set(m.id, m)
-  }
-
-  let result = Array.from(combinedMap.values())
-  // If user has any custom memories, filter out initial stock photos
+  let result = localMemories.length > 0 ? localMemories : initialMemories
   const hasCustom = result.some(m => !m.imagePath.includes('images.unsplash.com'))
   if (hasCustom) {
     result = result.filter(m => !m.imagePath.includes('images.unsplash.com'))
-  }
-
-  result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-
-  if (typeof window !== 'undefined' && result.length > 0) {
-    localStorage.setItem(MEMORIES_KEY, JSON.stringify(result))
   }
 
   return result.length > 0 ? result : initialMemories
@@ -574,13 +526,12 @@ const POLAROIDS_KEY = 'birthday_polaroids_data';
 
 export async function fetchPolaroids(): Promise<Polaroid[]> {
   const supabase = getSupabaseClient()
-  let cloudPolaroids: Polaroid[] = []
 
   if (supabase) {
     try {
       const { data, error } = await supabase.from('polaroids').select('*').order('created_at', { ascending: false })
       if (!error && data) {
-        cloudPolaroids = data
+        const polaroids = data
           .filter((row: any) => !isMemoryPhoto(row.image_url || ''))
           .map(row => ({
             id: row.id,
@@ -588,67 +539,29 @@ export async function fetchPolaroids(): Promise<Polaroid[]> {
             caption: row.caption || '',
             createdAt: new Date(row.created_at).getTime()
           }))
+
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(POLAROIDS_KEY, JSON.stringify(polaroids))
+        }
+
+        return polaroids
       }
     } catch (e) {
-      console.warn('Supabase fetch polaroids failed:', e)
+      console.warn('Supabase fetch polaroids failed, falling back to local storage:', e)
     }
   }
   
-  let localPolaroids: Polaroid[] = []
   if (typeof window !== 'undefined') {
     const stored = localStorage.getItem(POLAROIDS_KEY)
     if (stored) {
       try {
-        localPolaroids = JSON.parse(stored)
+        const local = JSON.parse(stored)
+        return local.filter((p: Polaroid) => !isMemoryPhoto(p.imagePath))
       } catch {}
     }
   }
 
-  // Strictly exclude memory photos from local polaroids
-  localPolaroids = localPolaroids.filter(p => !isMemoryPhoto(p.imagePath))
-
-  // Find any local polaroids that haven't been synced to Supabase yet
-  const cloudIds = new Set(cloudPolaroids.map(p => p.id))
-  const cloudImageUrls = new Set(cloudPolaroids.map(p => p.imagePath))
-  const unsynced = localPolaroids.filter(p => 
-    !cloudIds.has(p.id) && 
-    !cloudImageUrls.has(p.imagePath) &&
-    !isMemoryPhoto(p.imagePath)
-  )
-
-  // Auto-sync earlier local polaroids to cloud so they appear on all devices
-  if (unsynced.length > 0 && supabase) {
-    for (const p of unsynced) {
-      try {
-        await supabase.from('polaroids').insert([{
-          id: p.id,
-          image_url: p.imagePath,
-          caption: p.caption,
-          created_at: new Date(p.createdAt).toISOString()
-        }])
-        cloudPolaroids.push(p)
-      } catch (err) {
-        console.warn('Failed to auto-sync polaroid to cloud:', err)
-      }
-    }
-  }
-
-  // Combine both lists (cloud and local)
-  const combinedMap = new Map<string, Polaroid>()
-  for (const p of localPolaroids) {
-    combinedMap.set(p.id, p)
-  }
-  for (const p of cloudPolaroids) {
-    combinedMap.set(p.id, p)
-  }
-
-  const result = Array.from(combinedMap.values()).sort((a, b) => b.createdAt - a.createdAt)
-
-  if (typeof window !== 'undefined' && result.length > 0) {
-    localStorage.setItem(POLAROIDS_KEY, JSON.stringify(result))
-  }
-
-  return result
+  return []
 }
 
 export async function createPolaroid(data: Omit<Polaroid, 'id' | 'createdAt'>, file?: File): Promise<Polaroid> {
@@ -760,13 +673,40 @@ export async function updatePolaroid(
 }
 
 export async function removePolaroid(id: string): Promise<void> {
+  // 1. Immediately delete from localStorage cache
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem(POLAROIDS_KEY)
+      if (stored) {
+        const local: Polaroid[] = JSON.parse(stored)
+        const updated = local.filter(p => p.id !== id)
+        localStorage.setItem(POLAROIDS_KEY, JSON.stringify(updated))
+      }
+    } catch (e) {
+      console.warn('Failed to remove polaroid from local storage:', e)
+    }
+  }
+
+  // 2. Delete from Supabase
   const supabase = getSupabaseClient()
   if (supabase) {
-    await supabase.from('polaroids').delete().eq('id', id)
-  }
-  if (typeof window !== 'undefined') {
-    const existing = await fetchPolaroids();
-    localStorage.setItem(POLAROIDS_KEY, JSON.stringify(existing.filter(p => p.id !== id)));
+    try {
+      // Clean up storage file if it exists in Supabase bucket
+      const { data } = await supabase.from('polaroids').select('image_url').eq('id', id).single()
+      if (data?.image_url && data.image_url.includes('/public/memories/')) {
+        const path = data.image_url.split('/public/memories/')[1]
+        if (path) {
+          supabase.storage.from('memories').remove([path]).catch(() => {})
+        }
+      }
+
+      const { error } = await supabase.from('polaroids').delete().eq('id', id)
+      if (error) {
+        console.error('Supabase remove polaroid error:', error)
+      }
+    } catch (e) {
+      console.warn('Supabase delete polaroid failed:', e)
+    }
   }
 }
 
