@@ -168,14 +168,12 @@ export function getLocalMemories(): Memory[] {
 }
 
 const isMemoryPhoto = (path: string) =>
-  path.includes('/memories/') ||
-  path.includes('179134') ||
-  path.includes('179135') ||
-  path.includes('179180')
+  path.includes('/memories/memories/') ||
+  /1791(?:34|35|80)/.test(path)
 
 const isPolaroidPhoto = (path: string) =>
   path.includes('/polaroids/') ||
-  path.includes('179301')
+  (path.includes('/memories/') && !isMemoryPhoto(path))
 
 export async function fetchMemories(): Promise<Memory[]> {
   const supabase = getSupabaseClient()
@@ -189,12 +187,6 @@ export async function fetchMemories(): Promise<Memory[]> {
         .order('date', { ascending: false })
 
       if (!error && data) {
-        // Automatically purge any polaroids mistakenly added to memories table
-        const misplaced = data.filter((item: any) => isPolaroidPhoto(item.image_path || ''))
-        for (const item of misplaced) {
-          supabase.from('memories').delete().eq('id', item.id)
-        }
-
         cloudMemories = data
           .filter((item: any) => !isPolaroidPhoto(item.image_path || ''))
           .map((item: any) => ({
@@ -588,12 +580,6 @@ export async function fetchPolaroids(): Promise<Polaroid[]> {
     try {
       const { data, error } = await supabase.from('polaroids').select('*').order('created_at', { ascending: false })
       if (!error && data) {
-        // Automatically purge any memory photos mistakenly added to polaroids table
-        const misplaced = data.filter((row: any) => isMemoryPhoto(row.image_url || ''))
-        for (const row of misplaced) {
-          supabase.from('polaroids').delete().eq('id', row.id)
-        }
-
         cloudPolaroids = data
           .filter((row: any) => !isMemoryPhoto(row.image_url || ''))
           .map(row => ({
