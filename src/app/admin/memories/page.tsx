@@ -1,38 +1,19 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { fetchMemories, removeMemory, reorderMemories, recoverMemoriesFromStorage } from '@/lib/storage'
+import { fetchMemories, removeMemory, reorderMemories } from '@/lib/storage'
 import { Memory } from '@/data/initialData'
 import UploadForm from './UploadForm'
-import { Trash2, Plus, Image as ImageIcon, Edit2, ArrowUp, ArrowDown, RefreshCw } from 'lucide-react'
+import { Trash2, Plus, Image as ImageIcon, Edit2, ArrowUp, ArrowDown } from 'lucide-react'
 
 export default function AdminMemoriesPage() {
   const [memories, setMemories] = useState<Memory[]>([])
   const [editingMemory, setEditingMemory] = useState<Memory | null>(null)
   const [reordering, setReordering] = useState(false)
-  const [recovering, setRecovering] = useState(false)
 
   useEffect(() => {
     fetchMemories().then(setMemories)
   }, [])
-
-  const handleRecover = async () => {
-    setRecovering(true)
-    try {
-      const count = await recoverMemoriesFromStorage()
-      const refreshed = await fetchMemories()
-      setMemories(refreshed)
-      if (count > 0) {
-        alert(`Successfully synced ${count} memories from cloud storage!`)
-      } else {
-        alert('All cloud storage memory photos are already synced!')
-      }
-    } catch {
-      alert('Failed to sync memories from cloud storage.')
-    } finally {
-      setRecovering(false)
-    }
-  }
 
   const handleMemorySaved = (savedMemory: Memory) => {
     setMemories(prev => {
@@ -110,20 +91,9 @@ export default function AdminMemoriesPage() {
       </div>
 
       <div>
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-            <ImageIcon className="w-5 h-5 text-rose-500" /> Saved Memories ({memories.length})
-          </h2>
-          <button
-            type="button"
-            onClick={handleRecover}
-            disabled={recovering}
-            className="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/80 px-3 py-1.5 rounded-lg font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer shadow-2xs"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${recovering ? 'animate-spin' : ''}`} />
-            {recovering ? 'Syncing...' : 'Sync Cloud Storage'}
-          </button>
-        </div>
+        <h2 className="text-lg font-bold mb-4 text-gray-900 flex items-center gap-2">
+          <ImageIcon className="w-5 h-5 text-rose-500" /> Saved Memories ({memories.length})
+        </h2>
         
         {reordering && <p className="text-xs text-rose-500 font-medium mb-4">Saving order...</p>}
 

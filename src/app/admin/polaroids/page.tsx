@@ -1,13 +1,12 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { fetchPolaroids, createPolaroid, updatePolaroid, removePolaroid, recoverPolaroidsFromStorage, Polaroid } from '@/lib/storage'
-import { Trash2, Plus, Image as ImageIcon, Loader2, Edit3, X, Check, RefreshCw } from 'lucide-react'
+import { fetchPolaroids, createPolaroid, updatePolaroid, removePolaroid, Polaroid } from '@/lib/storage'
+import { Trash2, Plus, Image as ImageIcon, Loader2, Edit3, X, Check } from 'lucide-react'
 
 export default function AdminPolaroidsPage() {
   const [polaroids, setPolaroids] = useState<Polaroid[]>([])
   const [loading, setLoading] = useState(false)
-  const [recovering, setRecovering] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [caption, setCaption] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -19,24 +18,6 @@ export default function AdminPolaroidsPage() {
   useEffect(() => {
     fetchPolaroids().then(setPolaroids)
   }, [])
-
-  const handleRecover = async () => {
-    setRecovering(true)
-    try {
-      const recovered = await recoverPolaroidsFromStorage()
-      const refreshed = await fetchPolaroids()
-      setPolaroids(refreshed)
-      if (recovered > 0) {
-        alert(`Successfully synced ${recovered} photos from cloud storage into the vault!`)
-      } else {
-        alert('All cloud storage photos are already synced with the vault!')
-      }
-    } catch {
-      alert('Failed to sync photos from cloud storage.')
-    } finally {
-      setRecovering(false)
-    }
-  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -212,20 +193,9 @@ export default function AdminPolaroidsPage() {
         </div>
 
         <div className="lg:col-span-2 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-gray-100 shadow-xs">
-            <div className="flex items-center gap-3">
-              <h2 className="text-lg font-bold text-gray-800">Polaroid Vault ({polaroids.length})</h2>
-              <span className="text-xs text-gray-400 hidden sm:inline">• Click to edit</span>
-            </div>
-            <button
-              type="button"
-              onClick={handleRecover}
-              disabled={recovering}
-              className="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/80 px-3 py-1.5 rounded-lg font-medium flex items-center gap-1.5 transition-colors disabled:opacity-50 cursor-pointer shadow-2xs"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${recovering ? 'animate-spin' : ''}`} />
-              {recovering ? 'Syncing...' : 'Sync Cloud Storage'}
-            </button>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-gray-800">Polaroid Vault ({polaroids.length})</h2>
+            <span className="text-xs text-gray-400">Tip: Click any polaroid to edit it</span>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-6">

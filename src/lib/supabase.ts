@@ -42,7 +42,7 @@ export function getSupabaseClient() {
   return null
 }
 
-export async function uploadImageToSupabase(file: File): Promise<string> {
+export async function uploadImageToSupabase(file: File, folder?: string): Promise<string> {
   const client = getSupabaseClient()
   if (!client) {
     throw new Error('Supabase client is not connected')
@@ -50,7 +50,8 @@ export async function uploadImageToSupabase(file: File): Promise<string> {
 
   const fileExt = file.name.split('.').pop() || 'jpg'
   const cleanExt = fileExt.toLowerCase().replace(/[^a-z0-9]/g, '')
-  const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${cleanExt || 'jpg'}`
+  const randomName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${cleanExt || 'jpg'}`
+  const fileName = folder ? `${folder}/${randomName}` : randomName
   const bytes = await file.arrayBuffer()
 
   const { error } = await client.storage

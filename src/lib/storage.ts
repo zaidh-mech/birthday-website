@@ -266,41 +266,6 @@ export async function fetchMemories(): Promise<Memory[]> {
   return result.length > 0 ? result : initialMemories
 }
 
-export async function recoverMemoriesFromStorage(): Promise<number> {
-  const supabase = getSupabaseClient()
-  if (!supabase) return 0
-  try {
-    const { data: files, error } = await supabase.storage.from('memories').list()
-    if (error || !files) return 0
-
-    const currentMemories = await fetchMemories()
-    const memoryUrls = new Set(currentMemories.map(m => m.imagePath))
-
-    const { data: polaroidRows } = await supabase.from('polaroids').select('image_url')
-    const polaroidUrls = new Set((polaroidRows || []).map(p => p.image_url))
-
-    let recovered = 0
-    for (const file of files) {
-      if (file.name.startsWith('.')) continue
-      const { data: urlData } = supabase.storage.from('memories').getPublicUrl(file.name)
-      const publicUrl = urlData?.publicUrl
-      if (publicUrl && !memoryUrls.has(publicUrl) && !polaroidUrls.has(publicUrl)) {
-        const { error: insertErr } = await supabase.from('memories').insert({
-          title: 'Special Memory',
-          caption: 'A cherished moment together',
-          image_path: publicUrl,
-          date: file.created_at || new Date().toISOString()
-        })
-        if (!insertErr) recovered++
-      }
-    }
-    return recovered
-  } catch (e) {
-    console.warn('Failed to recover memories from storage:', e)
-    return 0
-  }
-}
-
 export async function createMemory(payload: {
   title: string
   caption: string
@@ -313,7 +278,7 @@ export async function createMemory(payload: {
 
   if (payload.file && supabase) {
     try {
-      finalImagePath = await uploadImageToSupabase(payload.file)
+      finalImagePath = await uploadImageToSupabase(payload.file, 'memories')
     } catch (e) {
       console.warn('Upload image to Supabase failed, falling back to local preview:', e)
     }
@@ -429,7 +394,7 @@ export async function updateMemory(id: string, updates: { title: string; caption
   
   if (updates.file && supabase) {
     try {
-      finalImagePath = await uploadImageToSupabase(updates.file)
+      finalImagePath = await uploadImageToSupabase(updates.file, 'memories')
     } catch (e) {
       console.warn('Upload image to Supabase failed during update:', e)
     }
@@ -675,7 +640,7 @@ export async function createPolaroid(data: Omit<Polaroid, 'id' | 'createdAt'>, f
   if (supabase) {
     try {
       if (file) {
-        const publicUrl = await uploadImageToSupabase(file)
+        const publicUrl = await uploadImageToSupabase(file, 'polaroids')
         if (publicUrl) {
           newPolaroid.imagePath = publicUrl
         }
@@ -714,40 +679,6 @@ export async function createPolaroid(data: Omit<Polaroid, 'id' | 'createdAt'>, f
   return newPolaroid
 }
 
-export async function recoverPolaroidsFromStorage(): Promise<number> {
-  const supabase = getSupabaseClient()
-  if (!supabase) return 0
-  try {
-    const { data: files, error } = await supabase.storage.from('memories').list()
-    if (error || !files) return 0
-
-    const current = await fetchPolaroids()
-    const existingUrls = new Set(current.map(p => p.imagePath))
-
-    let recoveredCount = 0
-    for (const file of files) {
-      if (file.name.startsWith('.')) continue
-      const { data: urlData } = supabase.storage.from('memories').getPublicUrl(file.name)
-      const publicUrl = urlData?.publicUrl
-      if (publicUrl && !existingUrls.has(publicUrl)) {
-        const id = Math.random().toString(36).substring(2, 9)
-        const dateStr = file.created_at || new Date().toISOString()
-        await supabase.from('polaroids').insert([{
-          id,
-          image_url: publicUrl,
-          caption: 'Special Memory',
-          created_at: dateStr
-        }])
-        recoveredCount++
-      }
-    }
-    return recoveredCount
-  } catch (e) {
-    console.warn('Error recovering polaroids from storage:', e)
-    return 0
-  }
-}
-
 export async function updatePolaroid(
   id: string,
   updates: { caption?: string; imagePath?: string },
@@ -758,7 +689,7 @@ export async function updatePolaroid(
 
   if (file && supabase) {
     try {
-      finalImagePath = await uploadImageToSupabase(file)
+      finalImagePath = await uploadImageToSupabase(file, 'polaroids')
     } catch (e) {
       console.warn('Upload image to Supabase failed during update:', e)
     }
