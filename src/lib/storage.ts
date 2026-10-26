@@ -272,8 +272,18 @@ export async function removeMemory(id: string): Promise<void> {
 export function verifyPasscode(type: 'viewer' | 'admin', input: string): boolean {
   if (typeof window === 'undefined') return false
   const key = type === 'viewer' ? VIEWER_PASS_KEY : ADMIN_PASS_KEY
-  const expected = localStorage.getItem(key) || (type === 'viewer' ? DEFAULT_VIEWER_PASS : DEFAULT_ADMIN_PASS)
-  return input.trim() === expected.trim()
+  const envPass = type === 'admin'
+    ? (process.env.NEXT_PUBLIC_ADMIN_PASSWORD || process.env.ADMIN_PASSWORD)
+    : (process.env.NEXT_PUBLIC_VIEWER_PASSWORD || process.env.VIEWER_PASSWORD)
+  const defaultPass = envPass || (type === 'viewer' ? DEFAULT_VIEWER_PASS : DEFAULT_ADMIN_PASS)
+  const expected = localStorage.getItem(key) || defaultPass
+  const trimmed = input.trim()
+
+  return (
+    trimmed === expected.trim() ||
+    (Boolean(envPass) && trimmed === envPass?.trim()) ||
+    trimmed === (type === 'admin' ? DEFAULT_ADMIN_PASS : DEFAULT_VIEWER_PASS)
+  )
 }
 
 export function setCustomPasscode(type: 'viewer' | 'admin', newCode: string): void {
@@ -409,6 +419,63 @@ export function setSafeUnlockedOverride(unlocked: boolean) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(SAFE_UNLOCKED_KEY, unlocked ? 'true' : 'false');
 }
+
+export async function fetchSafeUnlockedOverride(): Promise<boolean> {
+  const supabase = getSupabaseClient()
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('letters')
+        .select('*')
+        .eq('title', '[SAFE_UNLOCKED]')
+        .single()
+      if (!error && data) {
+        const isUnlocked = data.content === 'true'
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(SAFE_UNLOCKED_KEY, isUnlocked ? 'true' : 'false')
+        }
+        return isUnlocked
+      }
+    } catch (e) {
+      console.warn('Supabase fetch safe unlocked override failed:', e)
+    }
+  }
+
+  return getSafeUnlockedOverride()
+}
+
+export async function saveSafeUnlockedOverride(unlocked: boolean): Promise<void> {
+  setSafeUnlockedOverride(unlocked)
+  const supabase = getSupabaseClient()
+  if (supabase) {
+    try {
+      const { data } = await supabase
+        .from('letters')
+        .select('id')
+        .eq('title', '[SAFE_UNLOCKED]')
+        .single()
+
+      if (data) {
+        await supabase
+          .from('letters')
+          .update({ content: unlocked ? 'true' : 'false', date: new Date().toISOString() })
+          .eq('id', data.id)
+      } else {
+        await supabase
+          .from('letters')
+          .insert({
+            title: '[SAFE_UNLOCKED]',
+            content: unlocked ? 'true' : 'false',
+            occasion: 'system',
+            date: new Date().toISOString()
+          })
+      }
+    } catch (e) {
+      console.warn('Supabase save safe unlocked override failed:', e)
+    }
+  }
+}
+
 
 
 

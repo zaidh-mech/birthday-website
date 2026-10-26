@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { clsx } from 'clsx'
+import { Lock } from 'lucide-react'
 
 const links = [
   { href: '/', label: 'Home' },
@@ -18,7 +19,7 @@ export default function Navigation() {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center py-6 px-4 pointer-events-none">
-      <div className="bg-white/70 dark:bg-[#0b0c10]/70 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-sm rounded-[2rem] p-2 flex pointer-events-auto items-center relative transition-colors duration-1000">
+      <div className="bg-white/70 dark:bg-[#0b0c10]/70 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-sm rounded-[2rem] p-1.5 sm:p-2 flex pointer-events-auto items-center relative transition-colors duration-1000">
         {links.map((link) => (
           <Link
             key={link.href}
@@ -37,6 +38,15 @@ export default function Navigation() {
             )}
           </Link>
         ))}
+
+        <Link
+          href="/admin"
+          className="relative p-2 text-gray-400 hover:text-rose-500 dark:hover:text-rose-300 transition-colors rounded-full"
+          title="Admin Studio"
+          aria-label="Admin Studio"
+        >
+          <Lock className="w-3.5 h-3.5" />
+        </Link>
       </div>
     </nav>
   )

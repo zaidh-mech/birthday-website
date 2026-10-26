@@ -5,3 +5,10 @@
 [build.environment]
   PAGES_BASE_PATH = ""
   NODE_VERSION = "20"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
+

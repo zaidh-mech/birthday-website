@@ -1,21 +1,24 @@
 import { createClient } from '@supabase/supabase-js'
 
+const DEFAULT_SUPABASE_URL = 'https://mugtcupwehermhxcssji.supabase.co'
+const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11Z3RjdXB3ZWhlcm1oeGNzc2ppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyNTQxMjksImV4cCI6MjEwNjgzMDEyOX0.7IA4YtHM3iu7TT-mImKz_jFuNICVfthX985gsmDYxaA'
+
 export function getSupabaseCredentials() {
-  const envUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const envKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const envUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL
+  const envKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY
 
   if (typeof window !== 'undefined') {
     const localUrl = localStorage.getItem('birthday_supabase_url')
     const localKey = localStorage.getItem('birthday_supabase_key')
     return {
-      url: envUrl || localUrl || '',
-      key: envKey || localKey || '',
+      url: localUrl || envUrl || DEFAULT_SUPABASE_URL,
+      key: localKey || envKey || DEFAULT_SUPABASE_ANON_KEY,
     }
   }
 
   return {
-    url: envUrl || '',
-    key: envKey || '',
+    url: envUrl,
+    key: envKey,
   }
 }
 

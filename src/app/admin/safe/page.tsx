@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createLetter, fetchLetters, removeLetter, getSafeUnlockedOverride, setSafeUnlockedOverride } from '@/lib/storage'
+import { createLetter, fetchLetters, removeLetter, fetchSafeUnlockedOverride, saveSafeUnlockedOverride } from '@/lib/storage'
 import { Save, AlertCircle, CheckCircle2, Unlock } from 'lucide-react'
 
 const DEFAULT_LETTER_TEXT = `To my dearest [pet name|baby],
@@ -20,23 +20,26 @@ export default function SafeConfigPage() {
 
   useEffect(() => {
     async function loadConfig() {
-      const letters = await fetchLetters()
+      const [letters, unlocked] = await Promise.all([
+        fetchLetters(),
+        fetchSafeUnlockedOverride()
+      ])
       const lockLetter = letters.find(l => l.title === '[LOCK_LETTER]')
       if (lockLetter) {
         setText(lockLetter.content)
       } else {
         setText(DEFAULT_LETTER_TEXT)
       }
-      setIsUnlocked(getSafeUnlockedOverride())
+      setIsUnlocked(unlocked)
       setLoading(false)
     }
     loadConfig()
   }, [])
 
-  const handleToggleUnlock = () => {
+  const handleToggleUnlock = async () => {
     const newVal = !isUnlocked;
     setIsUnlocked(newVal);
-    setSafeUnlockedOverride(newVal);
+    await saveSafeUnlockedOverride(newVal);
   }
 
   async function handleSave() {
