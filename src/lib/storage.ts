@@ -169,6 +169,8 @@ export function getLocalMemories(): Memory[] {
 
 export async function fetchMemories(): Promise<Memory[]> {
   const supabase = getSupabaseClient()
+  let cloudMemories: Memory[] = []
+
   if (supabase) {
     try {
       const { data, error } = await supabase
@@ -176,24 +178,127 @@ export async function fetchMemories(): Promise<Memory[]> {
         .select('*')
         .order('date', { ascending: false })
 
-      if (!error && data && data.length > 0) {
-        const memories: Memory[] = data.map((item: any) => ({
+      if (!error && data) {
+        cloudMemories = data.map((item: any) => ({
           id: String(item.id),
           title: item.title,
           caption: item.caption,
           imagePath: item.image_path || item.imagePath,
           date: item.date || item.created_at,
         }))
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(MEMORIES_KEY, JSON.stringify(memories))
-        }
-        return memories
       }
     } catch (e) {
       console.warn('Supabase fetch memories failed, using local storage:', e)
     }
   }
-  return getLocalMemories()
+
+  let localMemories: Memory[] = []
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem(MEMORIES_KEY)
+    if (stored) {
+      try {
+        localMemories = JSON.parse(stored)
+      } catch {}
+    }
+  }
+
+  // Find any local memories that haven't been synced to Supabase yet
+  const cloudIds = new Set(cloudMemories.map(m => m.id))
+  const cloudImages = new Set(cloudMemories.map(m => m.imagePath))
+  const unsynced = localMemories.filter(m => 
+    !cloudIds.has(m.id) && 
+    !cloudImages.has(m.imagePath) && 
+    !m.imagePath.includes('images.unsplash.com')
+  )
+
+  // Auto-sync earlier local memories to Supabase
+  if (unsynced.length > 0 && supabase) {
+    for (const m of unsynced) {
+      try {
+        const { data: inserted, error: insertError } = await supabase
+          .from('memories')
+          .insert({
+            title: m.title,
+            caption: m.caption,
+            image_path: m.imagePath,
+            date: m.date || new Date().toISOString(),
+          })
+          .select()
+          .single()
+
+        if (!insertError && inserted) {
+          cloudMemories.push({
+            id: String(inserted.id),
+            title: inserted.title,
+            caption: inserted.caption,
+            imagePath: inserted.image_path,
+            date: inserted.date || inserted.created_at,
+          })
+        }
+      } catch (err) {
+        console.warn('Failed to auto-sync memory to Supabase:', err)
+      }
+    }
+  }
+
+  // Combine both lists
+  const combinedMap = new Map<string, Memory>()
+  for (const m of localMemories) {
+    combinedMap.set(m.id, m)
+  }
+  for (const m of cloudMemories) {
+    combinedMap.set(m.id, m)
+  }
+
+  let result = Array.from(combinedMap.values())
+  // If user has any custom memories, filter out initial stock photos
+  const hasCustom = result.some(m => !m.imagePath.includes('images.unsplash.com'))
+  if (hasCustom) {
+    result = result.filter(m => !m.imagePath.includes('images.unsplash.com'))
+  }
+
+  result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+
+  if (typeof window !== 'undefined' && result.length > 0) {
+    localStorage.setItem(MEMORIES_KEY, JSON.stringify(result))
+  }
+
+  return result.length > 0 ? result : initialMemories
+}
+
+export async function recoverMemoriesFromStorage(): Promise<number> {
+  const supabase = getSupabaseClient()
+  if (!supabase) return 0
+  try {
+    const { data: files, error } = await supabase.storage.from('memories').list()
+    if (error || !files) return 0
+
+    const currentMemories = await fetchMemories()
+    const memoryUrls = new Set(currentMemories.map(m => m.imagePath))
+
+    const { data: polaroidRows } = await supabase.from('polaroids').select('image_url')
+    const polaroidUrls = new Set((polaroidRows || []).map(p => p.image_url))
+
+    let recovered = 0
+    for (const file of files) {
+      if (file.name.startsWith('.')) continue
+      const { data: urlData } = supabase.storage.from('memories').getPublicUrl(file.name)
+      const publicUrl = urlData?.publicUrl
+      if (publicUrl && !memoryUrls.has(publicUrl) && !polaroidUrls.has(publicUrl)) {
+        const { error: insertErr } = await supabase.from('memories').insert({
+          title: 'Special Memory',
+          caption: 'A cherished moment together',
+          image_path: publicUrl,
+          date: file.created_at || new Date().toISOString()
+        })
+        if (!insertErr) recovered++
+      }
+    }
+    return recovered
+  } catch (e) {
+    console.warn('Failed to recover memories from storage:', e)
+    return 0
+  }
 }
 
 export async function createMemory(payload: {
