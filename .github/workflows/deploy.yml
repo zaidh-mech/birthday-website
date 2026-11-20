@@ -1,5 +1,8 @@
 name: Deploy to GitHub Pages
 
+# The one and only deploy workflow: builds the static site (next build with
+# output: 'export' -> ./out) and publishes it to GitHub Pages.
+
 on:
   push:
     branches: [main]
@@ -10,9 +13,11 @@ permissions:
   pages: write
   id-token: write
 
+# One deployment at a time. A newer push waits for the running one instead of
+# cancelling it halfway through a Pages deployment.
 concurrency:
   group: 'pages'
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build-and-deploy:
@@ -35,11 +40,12 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build static site
         run: npm run build
         env:
+          # "/<repo-name>" for a project site, "" for a user site or custom domain.
           PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}

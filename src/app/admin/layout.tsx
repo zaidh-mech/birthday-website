@@ -1,129 +1,127 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import AdminLogin from './AdminLogin'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { isSessionAuthorized, setSessionAuthorized, exportAllData } from '@/lib/storage'
-import { getSupabaseCredentials, saveSupabaseCredentials, getSupabaseClient } from '@/lib/supabase'
-import { Download, LogOut, BookOpen, Image as ImageIcon, ArrowLeft, Database, X, Check, Copy, Gift, Lock, Menu } from 'lucide-react'
+import AdminLogin from './AdminLogin'
+import CloudDatabaseModal from './_components/CloudDatabaseModal'
+import { isSessionAuthorized, setSessionAuthorized, exportBackup, exportAllData } from '@/lib/storage'
+import { checkCloudConnection } from '@/lib/supabase'
+import { fetchSiteConfig } from '@/lib/siteConfig'
+import { normalizePath } from '@/lib/basePath'
+import {
+  ArrowLeft,
+  BookOpen,
+  Camera,
+  Database,
+  Download,
+  Gamepad2,
+  Gift,
+  Images,
+  Loader2,
+  Lock,
+  LogOut,
+  Menu,
+  X,
+  type LucideIcon,
+} from 'lucide-react'
 
-const SUPABASE_SETUP_SQL = `-- Run this in Supabase SQL Editor:
-create table if not exists public.letters (
-  id uuid primary key default gen_random_uuid(),
-  title text not null,
-  content text not null,
-  occasion text not null,
-  date timestamptz default now(),
-  created_at timestamptz default now()
-);
+type CloudStatus = 'checking' | 'online' | 'offline'
 
-create table if not exists public.memories (
-  id uuid primary key default gen_random_uuid(),
-  title text not null,
-  caption text not null,
-  image_path text not null,
-  date timestamptz default now(),
-  created_at timestamptz default now()
-);
+const NAV_LINKS: { href: string; label: string; icon: LucideIcon; alsoActiveOn?: string[] }[] = [
+  { href: '/admin/letters', label: 'Letters', icon: BookOpen, alsoActiveOn: ['/admin'] },
+  { href: '/admin/memories', label: 'Memories', icon: Images },
+  { href: '/admin/polaroids', label: 'Polaroids Vault', icon: Camera },
+  { href: '/admin/safe', label: 'Love Letter Safe', icon: Lock },
+  { href: '/admin/gift', label: 'Gift & Date', icon: Gift },
+  { href: '/admin/site', label: 'Site & Games', icon: Gamepad2 },
+]
 
-create table if not exists public.polaroids (
-  id text primary key,
-  image_url text not null,
-  caption text,
-  created_at timestamptz default now()
-);
+const STATUS_LABEL: Record<CloudStatus, string> = {
+  checking: 'Checking cloud…',
+  online: 'Cloud connected',
+  offline: "Cloud can't be reached",
+}
 
--- Grant permissions to anonymous and authenticated web visitors
-grant all on table public.letters to anon, authenticated, service_role;
-grant all on table public.memories to anon, authenticated, service_role;
-grant all on table public.polaroids to anon, authenticated, service_role;
-grant all on all sequences in schema public to anon, authenticated, service_role;
-
-alter table public.letters enable row level security;
-alter table public.memories enable row level security;
-alter table public.polaroids enable row level security;
-
-drop policy if exists "public_read_letters" on public.letters;
-drop policy if exists "public_write_letters" on public.letters;
-create policy "public_read_letters" on public.letters for select using (true);
-create policy "public_write_letters" on public.letters for all using (true) with check (true);
-
-drop policy if exists "public_read_memories" on public.memories;
-drop policy if exists "public_write_memories" on public.memories;
-create policy "public_read_memories" on public.memories for select using (true);
-create policy "public_write_memories" on public.memories for all using (true) with check (true);
-
-drop policy if exists "public_read_polaroids" on public.polaroids;
-drop policy if exists "public_write_polaroids" on public.polaroids;
-create policy "public_read_polaroids" on public.polaroids for select using (true);
-create policy "public_write_polaroids" on public.polaroids for all using (true) with check (true);
-
--- Storage bucket and policies
-insert into storage.buckets (id, name, public) values ('memories', 'memories', true) on conflict (id) do update set public = true;
-
-drop policy if exists "public_read_storage" on storage.objects;
-drop policy if exists "public_write_storage" on storage.objects;
-drop policy if exists "public_update_storage" on storage.objects;
-drop policy if exists "public_delete_storage" on storage.objects;
-
-create policy "public_read_storage" on storage.objects for select using (bucket_id = 'memories');
-create policy "public_write_storage" on storage.objects for insert with check (bucket_id = 'memories');
-create policy "public_update_storage" on storage.objects for update using (bucket_id = 'memories');
-create policy "public_delete_storage" on storage.objects for delete using (bucket_id = 'memories');`
+function StatusDot({ status }: { status: CloudStatus }) {
+  const color = status === 'online' ? 'bg-emerald-500' : status === 'offline' ? 'bg-amber-400' : 'bg-gray-300 animate-pulse'
+  return <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${color}`} aria-hidden="true" />
+}
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [authorized, setAuthorized] = useState<boolean | null>(null)
   const [showDbModal, setShowDbModal] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [supaUrl, setSupaUrl] = useState('')
-  const [supaKey, setSupaKey] = useState('')
-  const [isConnected, setIsConnected] = useState(false)
-  const [copiedSql, setCopiedSql] = useState(false)
-  const pathname = usePathname()
+  const [cloudStatus, setCloudStatus] = useState<CloudStatus>('checking')
+  const [exporting, setExporting] = useState(false)
+  const pathname = normalizePath(usePathname())
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     setAuthorized(isSessionAuthorized('admin'))
-
-    const creds = getSupabaseCredentials()
-    setSupaUrl(creds.url)
-    setSupaKey(creds.key)
-    setIsConnected(Boolean(getSupabaseClient()))
   }, [])
 
-  // Auto-close mobile drawer when navigating
+  useEffect(() => {
+    if (!authorized) return
+    let cancelled = false
+    setCloudStatus('checking')
+    checkCloudConnection()
+      .then((r) => !cancelled && setCloudStatus(r.ok ? 'online' : 'offline'))
+      .catch(() => !cancelled && setCloudStatus('offline'))
+    return () => {
+      cancelled = true
+    }
+  }, [authorized])
+
+  // Close the mobile drawer on navigation.
   useEffect(() => {
     setMobileMenuOpen(false)
   }, [pathname])
 
-  const handleLoginSuccess = () => {
-    setAuthorized(true)
-  }
+  // Drawer: Escape closes it and the page behind doesn't scroll.
+  useEffect(() => {
+    if (!mobileMenuOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMobileMenuOpen(false)
+        menuButtonRef.current?.focus()
+      }
+    }
+    const onResize = () => {
+      if (window.matchMedia('(min-width: 768px)').matches) setMobileMenuOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    window.addEventListener('resize', onResize)
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('resize', onResize)
+      document.body.style.overflow = previous
+    }
+  }, [mobileMenuOpen])
+
+  const closeDbModal = useCallback(() => setShowDbModal(false), [])
+  const handleStatusChange = useCallback((ok: boolean) => setCloudStatus(ok ? 'online' : 'offline'), [])
 
   const handleLogout = () => {
     setSessionAuthorized('admin', false)
+    setMobileMenuOpen(false)
     setAuthorized(false)
   }
 
-  const handleSaveSupabase = () => {
-    saveSupabaseCredentials(supaUrl, supaKey)
-    const client = getSupabaseClient()
-    setIsConnected(Boolean(client))
-    alert(client ? 'Supabase cloud credentials connected!' : 'Please check your Supabase URL and anon public key.')
-    if (client) {
-      setShowDbModal(false)
-      window.location.reload()
+  const handleExportBackup = async () => {
+    setExporting(true)
+    let json: string
+    try {
+      const siteConfig = await fetchSiteConfig(true)
+      json = await exportBackup({ siteConfig })
+    } catch (e) {
+      console.warn('Cloud backup failed, exporting the copy on this device:', e)
+      json = exportAllData()
+    } finally {
+      setExporting(false)
     }
-  }
-
-  const handleCopySql = () => {
-    navigator.clipboard.writeText(SUPABASE_SETUP_SQL)
-    setCopiedSql(true)
-    setTimeout(() => setCopiedSql(false), 2000)
-  }
-
-  const handleExportBackup = () => {
-    const json = exportAllData()
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -132,271 +130,186 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000)
   }
+
+  // Admin is always light: it's a work area, and forcing the light scheme keeps
+  // native inputs readable even when the site is in night mode.
+  const shell = 'min-h-screen w-full bg-gray-50 text-gray-900 [color-scheme:light]'
+
+  // React hoists this into <head>: keeps the admin area out of search engines.
+  const robots = <meta name="robots" content="noindex, nofollow" />
 
   if (authorized === null) {
-    return <div className="min-h-screen bg-gray-50 flex items-center justify-center" />
-  }
-
-  if (!authorized) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4 sm:p-6">
-        <AdminLogin onLoginSuccess={handleLoginSuccess} />
+      <div className={shell}>
+        {robots}
       </div>
     )
   }
 
-  const navLinks = [
-    { href: '/admin/letters', label: 'Manage Letters', icon: BookOpen, active: pathname === '/admin/letters' || pathname === '/admin' },
-    { href: '/admin/memories', label: 'Manage Memories', icon: ImageIcon, active: pathname === '/admin/memories' },
-    { href: '/admin/gift', label: 'Gift Settings', icon: Gift, active: pathname === '/admin/gift' },
-    { href: '/admin/polaroids', label: 'Polaroids Vault', icon: ImageIcon, active: pathname === '/admin/polaroids' },
-    { href: '/admin/safe', label: 'Love Letter Safe', icon: Lock, active: pathname === '/admin/safe' },
-  ]
+  if (!authorized) {
+    return (
+      <div className={`${shell} flex items-center justify-center p-4 sm:p-6`}>
+        {robots}
+        <AdminLogin onLoginSuccess={() => setAuthorized(true)} />
+      </div>
+    )
+  }
+
+  const isActive = (link: (typeof NAV_LINKS)[number]) => pathname === link.href || Boolean(link.alsoActiveOn?.includes(pathname))
+
+  const navList = (variant: 'mobile' | 'desktop') => (
+    <ul className="space-y-1">
+      {NAV_LINKS.map((link) => {
+        const Icon = link.icon
+        const active = isActive(link)
+        return (
+          <li key={link.href}>
+            <Link
+              href={link.href}
+              aria-current={active ? 'page' : undefined}
+              onClick={() => setMobileMenuOpen(false)}
+              className={`flex items-center gap-3 px-4 ${variant === 'mobile' ? 'py-3' : 'py-2.5'} rounded-xl text-sm transition-colors ${
+                active ? 'bg-rose-50 text-rose-700 font-semibold' : 'font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
+            >
+              <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-rose-500' : ''}`} aria-hidden="true" />
+              {link.label}
+            </Link>
+          </li>
+        )
+      })}
+    </ul>
+  )
+
+  const toolButtons = (variant: 'mobile' | 'desktop') => {
+    const pad = variant === 'mobile' ? 'py-3' : 'py-2.5'
+    return (
+      <div className="space-y-1">
+        <button
+          type="button"
+          onClick={() => {
+            setMobileMenuOpen(false)
+            setShowDbModal(true)
+          }}
+          className={`w-full flex items-center justify-between gap-3 px-4 ${pad} rounded-xl text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 text-left transition-colors`}
+        >
+          <span className="flex items-center gap-3">
+            <Database className="w-4 h-4 text-rose-500" aria-hidden="true" />
+            Cloud Database
+          </span>
+          <span className="flex items-center gap-1.5 text-[11px] text-gray-400">
+            <StatusDot status={cloudStatus} />
+            <span className="sr-only">{STATUS_LABEL[cloudStatus]}</span>
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setMobileMenuOpen(false)
+            void handleExportBackup()
+          }}
+          disabled={exporting}
+          className={`w-full flex items-center gap-3 px-4 ${pad} rounded-xl text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 text-left transition-colors disabled:opacity-60`}
+        >
+          {exporting ? <Loader2 className="w-4 h-4 animate-spin text-emerald-600" aria-hidden="true" /> : <Download className="w-4 h-4 text-emerald-600" aria-hidden="true" />}
+          {exporting ? 'Preparing backup…' : 'Export backup (JSON)'}
+        </button>
+      </div>
+    )
+  }
+
+  const footerLinks = (
+    <div className="space-y-1">
+      <Link href="/" className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-500 hover:text-gray-900 rounded-xl transition-colors">
+        <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+        Back to site
+      </Link>
+      <button
+        type="button"
+        onClick={handleLogout}
+        className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-colors text-left font-medium"
+      >
+        <LogOut className="w-4 h-4" aria-hidden="true" />
+        Log out
+      </button>
+    </div>
+  )
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
-      {/* Mobile Top Header */}
-      <header className="md:hidden sticky top-0 z-40 bg-white border-b border-gray-200 px-4 py-3.5 flex items-center justify-between shadow-xs">
-        <div className="flex items-center gap-2">
-          <span className="font-serif text-lg font-bold text-gray-900 flex items-center gap-1.5">
-            <span>✦</span> Admin Studio
-          </span>
-          <span 
-            className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-amber-400'}`}
-            title={isConnected ? 'Cloud Connected' : 'Local Mode'}
-          />
+    <div className={`${shell} flex flex-col md:flex-row`}>
+      {robots}
+      {/* Mobile top bar */}
+      <header className="md:hidden sticky top-0 z-40 h-14 bg-white/95 backdrop-blur border-b border-gray-200 px-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="font-serif text-lg font-bold text-gray-900 truncate">✦ Admin Studio</span>
+          <StatusDot status={cloudStatus} />
+          <span className="sr-only">{STATUS_LABEL[cloudStatus]}</span>
         </div>
-
         <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
-          aria-label="Toggle navigation menu"
+          ref={menuButtonRef}
+          type="button"
+          onClick={() => setMobileMenuOpen((open) => !open)}
+          className="p-2 -mr-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
+          aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+          aria-expanded={mobileMenuOpen}
+          aria-controls="admin-mobile-menu"
         >
           {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
       </header>
 
-      {/* Mobile Menu Dropdown / Overlay */}
+      {/* Mobile drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 top-[57px] z-30 bg-gray-900/40 backdrop-blur-xs flex flex-col justify-between">
-          <div className="bg-white border-b border-gray-200 p-5 space-y-4 max-h-[80vh] overflow-y-auto shadow-xl">
-            <nav className="space-y-1.5">
-              {navLinks.map((link) => {
-                const IconComponent = link.icon
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                      link.active
-                        ? 'bg-rose-50 text-rose-700 font-semibold'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                  >
-                    <IconComponent className="w-4 h-4" />
-                    {link.label}
-                  </Link>
-                )
-              })}
-
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false)
-                  setShowDbModal(true)
-                }}
-                className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 text-left transition-colors"
-              >
-                <span className="flex items-center gap-3">
-                  <Database className="w-4 h-4 text-rose-500" />
-                  Cloud Database
-                </span>
-                <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-amber-400'}`} />
-              </button>
-
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false)
-                  handleExportBackup()
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 text-left transition-colors"
-              >
-                <Download className="w-4 h-4 text-emerald-600" />
-                Export Backup JSON
-              </button>
-            </nav>
-
-            <div className="pt-4 border-t border-gray-100 space-y-2">
-              <Link
-                href="/"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 hover:text-gray-900 rounded-xl transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back to Site
-              </Link>
-
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 rounded-xl transition-colors text-left font-medium"
-              >
-                <LogOut className="w-4 h-4" />
-                Logout
-              </button>
-            </div>
-          </div>
-          
-          <div className="flex-1" onClick={() => setMobileMenuOpen(false)} />
+        <div className="md:hidden fixed inset-x-0 bottom-0 top-14 z-40 flex flex-col">
+          <nav
+            id="admin-mobile-menu"
+            aria-label="Admin"
+            className="bg-white border-b border-gray-200 px-4 py-4 space-y-4 max-h-full overflow-y-auto overscroll-contain shadow-xl"
+          >
+            {navList('mobile')}
+            <div className="pt-3 border-t border-gray-100">{toolButtons('mobile')}</div>
+            <div className="pt-3 border-t border-gray-100">{footerLinks}</div>
+          </nav>
+          <button
+            type="button"
+            className="flex-1 min-h-8 bg-gray-900/40 backdrop-blur-[2px] cursor-default"
+            aria-label="Close menu"
+            tabIndex={-1}
+            onClick={() => setMobileMenuOpen(false)}
+          />
         </div>
       )}
 
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 bg-white border-r border-gray-200 p-6 flex-col justify-between shrink-0">
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex md:sticky md:top-0 md:h-screen w-60 lg:w-64 shrink-0 bg-white border-r border-gray-200 p-5 lg:p-6 flex-col justify-between overflow-y-auto">
         <div>
-          <div className="font-serif text-2xl font-bold mb-8 text-gray-900 flex items-center gap-2">
-            <span>✦</span> Admin Studio
-          </div>
-          
-          <nav className="space-y-1">
-            {navLinks.map((link) => {
-              const IconComponent = link.icon
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                    link.active
-                      ? 'bg-rose-50 text-rose-700 font-semibold'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  <IconComponent className="w-4 h-4" />
-                  {link.label}
-                </Link>
-              )
-            })}
-            
-            <button
-              onClick={() => setShowDbModal(true)}
-              className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 text-left transition-colors"
-            >
-              <span className="flex items-center gap-3">
-                <Database className="w-4 h-4 text-rose-500" />
-                Cloud Database
-              </span>
-              <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-amber-400'}`} />
-            </button>
-
-            <button
-              onClick={handleExportBackup}
-              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 text-left transition-colors"
-            >
-              <Download className="w-4 h-4 text-emerald-600" />
-              Export Backup JSON
-            </button>
-          </nav>
+          <div className="font-serif text-2xl font-bold mb-1 text-gray-900">✦ Admin Studio</div>
+          <p className="flex items-center gap-1.5 text-xs text-gray-500 mb-7">
+            <StatusDot status={cloudStatus} />
+            {STATUS_LABEL[cloudStatus]}
+          </p>
+          <nav aria-label="Admin">{navList('desktop')}</nav>
+          <div className="mt-5 pt-5 border-t border-gray-100">{toolButtons('desktop')}</div>
         </div>
-
-        <div className="pt-6 border-t border-gray-100 space-y-2 mt-6">
-          <Link 
-            href="/" 
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-500 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Site
-          </Link>
-          
-          <button 
-            onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50 rounded-lg transition-colors text-left"
-          >
-            <LogOut className="w-4 h-4" />
-            Logout
-          </button>
-        </div>
+        <div className="pt-5 border-t border-gray-100 mt-6">{footerLinks}</div>
       </aside>
 
-      {/* Main Content Area */}
-      <main className="flex-1 min-w-0 p-4 sm:p-6 md:p-10 overflow-y-auto">
+      {/* Page content */}
+      <main className="flex-1 min-w-0 px-4 py-6 sm:px-6 md:px-8 lg:px-10 md:py-10 pb-28 md:pb-16">
+        {cloudStatus === 'offline' && (
+          <div role="status" className="mb-6 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <span className="flex-1">The cloud database isn&apos;t answering properly, so some changes may not save. Lists may show the copy stored on this device.</span>
+            <button type="button" onClick={() => setShowDbModal(true)} className="self-start sm:self-auto shrink-0 rounded-xl bg-white border border-amber-200 px-3 py-1.5 text-xs font-semibold hover:bg-amber-100">
+              Check connection
+            </button>
+          </div>
+        )}
         {children}
       </main>
 
-      {/* Supabase Cloud Connection Modal */}
-      {showDbModal && (
-        <div className="fixed inset-0 z-50 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl relative space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar">
-            <button 
-              onClick={() => setShowDbModal(false)}
-              className="absolute top-6 right-6 p-2 text-gray-400 hover:text-gray-600 rounded-full"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div>
-              <h2 className="font-serif text-2xl font-bold text-gray-900 flex items-center gap-2">
-                <Database className="w-6 h-6 text-rose-500" /> Supabase Cloud Sync
-              </h2>
-              <p className="text-gray-500 text-xs mt-1">
-                Sync all letters, memories, and polaroids across every phone & computer.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
-                  Supabase Project URL
-                </label>
-                <input 
-                  type="url"
-                  value={supaUrl}
-                  onChange={(e) => setSupaUrl(e.target.value)}
-                  placeholder="https://mugtcupwehermhxcssji.supabase.co"
-                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-200"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
-                  Supabase Anon Public Key
-                </label>
-                <textarea 
-                  value={supaKey}
-                  onChange={(e) => setSupaKey(e.target.value)}
-                  placeholder="eyJhbGciOi..."
-                  rows={3}
-                  className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-rose-200"
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={handleSaveSupabase}
-                className="w-full bg-gray-900 text-white font-medium py-2.5 rounded-xl text-sm hover:bg-gray-800 transition-colors"
-              >
-                Save & Connect Supabase
-              </button>
-            </div>
-
-            <div className="pt-4 border-t border-gray-100 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-gray-800">1-Minute Database Setup SQL</span>
-                <button
-                  onClick={handleCopySql}
-                  className="flex items-center gap-1 text-xs text-rose-600 font-medium hover:underline"
-                >
-                  {copiedSql ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copiedSql ? 'Copied!' : 'Copy SQL'}
-                </button>
-              </div>
-              <p className="text-xs text-gray-400 font-light">
-                Paste this into your Supabase Dashboard → <strong>SQL Editor</strong> to auto-create the tables and permissions.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      {showDbModal && <CloudDatabaseModal onClose={closeDbModal} onStatusChange={handleStatusChange} />}
     </div>
   )
 }

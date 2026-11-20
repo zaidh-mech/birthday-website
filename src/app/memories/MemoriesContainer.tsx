@@ -1,188 +1,185 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { fetchMemories, fetchLetters, setSessionAuthorized, fetchSafeUnlockedOverride } from '@/lib/storage'
-import MemoriesGallery from './MemoriesGallery'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Heart, LockOpen } from 'lucide-react'
-import { Memory } from '@/data/initialData'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
+import {
+  fetchLetters,
+  fetchMemories,
+  fetchSafeUnlockedOverride,
+  isSessionAuthorized,
+  setSessionAuthorized,
+} from '@/lib/storage'
+import type { Memory } from '@/data/initialData'
+import MemoriesSkeleton from './MemoriesSkeleton'
+import VaultGate from './VaultGate'
+import MemoriesExperience from './MemoriesExperience'
+import { DEFAULT_LETTER_TEXT, LOCK_LETTER_TITLE, parseLockLetter, type LetterPart } from './lockLetter'
 
-const DEFAULT_LETTER_TEXT = `To my dearest [pet name|baby],
+/** Remembers that she already opened the safe on this device. */
+const UNLOCK_KEY = 'birthday_memories_unlocked'
 
-From the very first time we went to [place|colombo], I knew you were someone special. I absolutely love your [feature|smile] and how you always make my days brighter. I can't wait to spend [time|forever] with you.
+type Phase = 'loading' | 'locked' | 'open'
 
-Yours always.`
+function readRemembered(): boolean {
+  try {
+    if (window.localStorage.getItem(UNLOCK_KEY) === 'true') return true
+  } catch {
+    /* storage blocked */
+  }
+  return isSessionAuthorized('viewer')
+}
+
+function rememberUnlock(value: boolean) {
+  try {
+    if (value) window.localStorage.setItem(UNLOCK_KEY, 'true')
+    else window.localStorage.removeItem(UNLOCK_KEY)
+  } catch {
+    /* storage blocked */
+  }
+  setSessionAuthorized('viewer', value)
+}
+
+/** The built-in placeholder memories (stock photos) aren't ours — hide them from the album. */
+function isPlaceholder(memory: Memory): boolean {
+  return /^memory-\d+$/.test(memory.id) && memory.imagePath.includes('images.unsplash.com')
+}
+
+async function loadLetterParts(): Promise<LetterPart[]> {
+  try {
+    const letters = await fetchLetters()
+    const lockLetter = letters.find((l) => l.title === LOCK_LETTER_TITLE)
+    return parseLockLetter(lockLetter?.content || DEFAULT_LETTER_TEXT)
+  } catch {
+    return parseLockLetter(DEFAULT_LETTER_TEXT)
+  }
+}
 
 export default function MemoriesContainer() {
-  const [memories, setMemories] = useState<Memory[] | null>(null)
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [answers, setAnswers] = useState<Record<string, string>>({})
-  const [shake, setShake] = useState(false)
-  const [letterParts, setLetterParts] = useState<any[]>([])
+  const reduceMotion = useReducedMotion() ?? false
+  const [phase, setPhase] = useState<Phase>('loading')
+  const [parts, setParts] = useState<LetterPart[] | null>(null)
+  const [globallyUnlocked, setGloballyUnlocked] = useState(false)
+  const [cinematic, setCinematic] = useState(false)
+  const [flash, setFlash] = useState(false)
+  const [album, setAlbum] = useState<Memory[] | null>(null)
+  const [albumFailed, setAlbumFailed] = useState(false)
+  const albumRequested = useRef(false)
 
+  // Decide between the vault and the memories.
   useEffect(() => {
-    setMemories(null)
-    setError('')
-    
-    // Fetch letter config
-    async function loadLetter() {
-      const isGloballyUnlocked = await fetchSafeUnlockedOverride()
-      if (isGloballyUnlocked) {
-        const data = await fetchMemories()
-        setMemories(data)
+    let cancelled = false
+    const remembered = readRemembered()
+    if (remembered) setPhase('open')
+
+    ;(async () => {
+      let override = false
+      try {
+        override = await fetchSafeUnlockedOverride()
+      } catch {
+        override = false
+      }
+      if (cancelled) return
+      setGloballyUnlocked(override)
+      if (override || remembered) {
+        setPhase('open')
         return
       }
-      const letters = await fetchLetters()
-      const lockLetter = letters.find(l => l.title === '[LOCK_LETTER]')
-      const rawText = lockLetter ? lockLetter.content : DEFAULT_LETTER_TEXT
-      
-      const regex = /\[([^\|]+)\|([^\]]+)\]/g
-      let lastIndex = 0
-      const parts = []
-      let match
-      let blankCount = 1
+      const letterParts = await loadLetterParts()
+      if (cancelled) return
+      setParts(letterParts)
+      setPhase('locked')
+    })()
 
-      while ((match = regex.exec(rawText)) !== null) {
-        if (match.index > lastIndex) {
-          parts.push({ type: 'text', content: rawText.substring(lastIndex, match.index) })
-        }
-        parts.push({ 
-          type: 'input', 
-          id: `blank${blankCount++}`, 
-          placeholder: match[1].trim(), 
-          answer: match[2].trim() 
-        })
-        lastIndex = regex.lastIndex
-      }
-      if (lastIndex < rawText.length) {
-        parts.push({ type: 'text', content: rawText.substring(lastIndex) })
-      }
-      setLetterParts(parts)
+    return () => {
+      cancelled = true
     }
-    
-    loadLetter()
   }, [])
 
-  async function handleUnlock() {
-    setError('')
-    setLoading(true)
-    
-    let allCorrect = true
-    letterParts.forEach(part => {
-      if (part.type === 'input') {
-        const userAnswer = (answers[part.id] || '').toLowerCase().trim()
-        const correctAnswer = (part.answer || '').toLowerCase().trim()
-        if (userAnswer !== correctAnswer) {
-          allCorrect = false
-        }
-      }
-    })
+  // Album uploads load once the vault is open.
+  useEffect(() => {
+    if (phase !== 'open' || albumRequested.current) return
+    albumRequested.current = true
+    fetchMemories()
+      .then((data) => {
+        setAlbum(data.filter((m) => m.title !== '[GIFT_PHOTO]' && !isPlaceholder(m)))
+      })
+      .catch(() => {
+        setAlbum([])
+        setAlbumFailed(true)
+      })
+  }, [phase])
 
-    if (allCorrect) {
-      try {
-        setSessionAuthorized('viewer', true)
-        const data = await fetchMemories()
-        setMemories(data)
-      } catch (err) {
-        setError('Something went wrong.')
-      }
-    } else {
-      setError("Hmm, that doesn't seem quite right. Try again!")
-      setShake(true)
-      setTimeout(() => setShake(false), 500)
-    }
-    
-    setLoading(false)
-  }
+  const handleUnlocked = useCallback(() => {
+    rememberUnlock(true)
+    setCinematic(true)
+    setFlash(true)
+    setPhase('open')
+    window.scrollTo({ top: 0 })
+  }, [])
 
-  if (memories) {
-    return (
-      <div className="w-full max-w-6xl mx-auto p-4 sm:p-6 pt-28 sm:pt-32 pb-24">
-        <div className="text-center mb-12 sm:mb-16 space-y-4">
-          <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-gray-900 dark:text-gray-100">Our Memories</h1>
-          <p className="font-serif italic text-base sm:text-lg text-rose-900/80 dark:text-rose-100/80">Snapshots of our time together.</p>
-        </div>
-        <MemoriesGallery memories={memories} />
-      </div>
-    )
-  }
-
-  if (letterParts.length === 0) {
-    return <div className="min-h-screen bg-transparent" />
-  }
+  const handleLock = useCallback(async () => {
+    rememberUnlock(false)
+    setCinematic(false)
+    window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' })
+    if (!parts) setParts(await loadLetterParts())
+    setPhase('locked')
+  }, [parts, reduceMotion])
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center w-full pt-28 sm:pt-32 pb-24 px-4 sm:px-6">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-2xl bg-[#FDFBF7] dark:bg-[#111218] p-5 sm:p-8 md:p-12 rounded-[2rem] shadow-lg shadow-rose-900/5 dark:shadow-none border border-rose-100 dark:border-white/10 text-center relative overflow-hidden transition-colors duration-1000"
-      >
-      {/* Decorative corner accents */}
-      <div className="absolute top-0 left-0 w-24 h-24 bg-rose-100 dark:bg-white/5 rounded-br-[100px] opacity-50 transition-colors" />
-      <div className="absolute bottom-0 right-0 w-32 h-32 bg-rose-50 dark:bg-white/5 rounded-tl-[100px] opacity-50 transition-colors" />
+    <div className="relative flex w-full flex-1 flex-col overflow-x-clip">
+      <AnimatePresence mode="wait">
+        {phase === 'loading' && (
+          <motion.div key="loading" className="flex flex-1 flex-col" exit={{ opacity: 0, transition: { duration: 0.2 } }}>
+            <MemoriesSkeleton />
+          </motion.div>
+        )}
 
-      <div className="relative z-10">
-        <div className="w-12 h-12 sm:w-14 sm:h-14 bg-rose-100 dark:bg-rose-500/20 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-inner transition-colors">
-          <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-rose-500 dark:text-rose-400 fill-rose-500/20" />
-        </div>
-        <h2 className="font-serif text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">A Letter for You</h2>
-        <p className="text-xs sm:text-sm text-rose-400 mb-6 sm:mb-10 font-medium tracking-wide uppercase">Fill in the blanks to unlock our memories</p>
-        
-        <motion.div 
-          animate={shake ? { x: [-10, 10, -10, 10, 0] } : {}}
-          transition={{ duration: 0.4 }}
-          className="text-left font-serif text-base sm:text-lg md:text-xl text-gray-800 dark:text-gray-200 leading-relaxed sm:leading-loose bg-white/60 dark:bg-white/10 p-5 sm:p-6 md:p-8 rounded-2xl border border-rose-50/50 dark:border-white/10 shadow-sm backdrop-blur-sm transition-colors duration-1000"
-        >
-          {letterParts.map((part, index) => {
-            if (part.type === 'text') {
-              return <span key={index} className="whitespace-pre-wrap">{part.content}</span>
-            } else if (part.type === 'input') {
-              return (
-                <input
-                  key={part.id}
-                  type="text"
-                  placeholder={part.placeholder}
-                  value={answers[part.id] || ''}
-                  onChange={(e) => {
-                    setError('')
-                    setAnswers(prev => ({ ...prev, [part.id]: e.target.value }))
-                  }}
-                  className={`inline-block mx-1 sm:mx-2 border-b-2 bg-rose-50/50 dark:bg-white/10 text-center text-rose-600 dark:text-purple-300 font-bold focus:outline-none focus:bg-rose-100 dark:focus:bg-white/20 transition-colors w-24 sm:w-28 md:w-32 rounded-t-md px-1.5 py-0.5 sm:px-2 sm:py-1 placeholder:text-gray-400 dark:placeholder:text-gray-500 text-sm sm:text-base ${error ? 'border-red-400' : 'border-rose-300 dark:border-purple-400 focus:border-rose-500 dark:focus:border-purple-300'}`}
-                />
-              )
+        {phase === 'locked' && parts && (
+          <motion.div
+            key="vault"
+            className="flex flex-1 flex-col"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={
+              reduceMotion
+                ? { opacity: 0, transition: { duration: 0.3 } }
+                : { opacity: 0, scale: 1.08, filter: 'blur(14px)', transition: { duration: 0.7, ease: [0.65, 0, 0.35, 1] } }
             }
-            return null
-          })}
-        </motion.div>
+          >
+            <VaultGate parts={parts} onUnlocked={handleUnlocked} />
+          </motion.div>
+        )}
 
-        <AnimatePresence>
-          {error && (
-            <motion.p 
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="text-red-500 text-xs sm:text-sm mt-4 sm:mt-6 font-medium"
-            >
-              {error}
-            </motion.p>
-          )}
-        </AnimatePresence>
+        {phase === 'open' && (
+          <motion.div
+            key="memories"
+            className="flex flex-1 flex-col"
+            initial={cinematic && !reduceMotion ? { opacity: 0, scale: 0.97 } : { opacity: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: cinematic ? 0.9 : 0.4, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <MemoriesExperience album={album} albumFailed={albumFailed} canLock={!globallyUnlocked} onLock={handleLock} cinematic={cinematic} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        <button
-          onClick={handleUnlock}
-          disabled={loading}
-          className="mt-8 sm:mt-10 inline-flex items-center gap-2 sm:gap-3 bg-rose-600 text-white font-medium px-6 py-3.5 sm:px-8 sm:py-4 rounded-full hover:bg-rose-700 hover:shadow-md hover:shadow-rose-600/20 transition-all disabled:opacity-70 active:scale-95 text-sm sm:text-base"
-        >
-          {loading ? 'Opening...' : (
-            <>
-              Open the Safe <LockOpen className="w-4 h-4 sm:w-5 sm:h-5" />
-            </>
-          )}
-        </button>
-      </div>
-    </motion.div>
+      {/* a soft flash of light as the vault opens */}
+      <AnimatePresence>
+        {flash && phase === 'open' && !reduceMotion && (
+          <motion.div
+            key="flash"
+            aria-hidden="true"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 0.9, 0] }}
+            transition={{ duration: 1.8, times: [0, 0.25, 1], ease: 'easeOut' }}
+            onAnimationComplete={() => setFlash(false)}
+            className="pointer-events-none fixed inset-0 z-[55]"
+          >
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(255,255,255,0.95),rgba(251,113,133,0.45)_40%,transparent_75%)] dark:hidden" />
+            <div className="absolute inset-0 hidden bg-[radial-gradient(circle_at_50%_40%,rgba(237,233,254,0.85),rgba(168,85,247,0.45)_40%,transparent_75%)] dark:block" />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

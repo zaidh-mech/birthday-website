@@ -1,0 +1,168 @@
+/* Keyframes and a few effects for the Memories page (kept local to this route). */
+
+/* Soft loading shimmer */
+.shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+:global(.dark) .shimmer::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+}
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Slow spin for the loading dial */
+.spinSlow {
+  animation: spin 9s linear infinite;
+}
+.spinReverse {
+  animation: spin 14s linear infinite reverse;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Animated gradient headline */
+.gradientText {
+  background-size: 220% 100%;
+  animation: gradientSlide 9s ease-in-out infinite alternate;
+}
+@keyframes gradientSlide {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 100% 50%;
+  }
+}
+
+/* Light sweep across a print when hovered */
+.sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.42) 48%, transparent 66%);
+  transform: translateX(-120%);
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.sheenHost:hover .sheen,
+.sheenHost:focus-visible .sheen {
+  transform: translateX(120%);
+}
+
+/* Ken Burns pan/zoom — direction comes from CSS variables set per slide */
+.kenBurns {
+  animation-name: kenBurns;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+  will-change: transform;
+}
+@keyframes kenBurns {
+  from {
+    transform: translate3d(var(--kb-x0, 0%), var(--kb-y0, 0%), 0) scale(var(--kb-s0, 1));
+  }
+  to {
+    transform: translate3d(var(--kb-x1, 0%), var(--kb-y1, 0%), 0) scale(var(--kb-s1, 1.1));
+  }
+}
+
+/* Gentle floating sparkles around the vault */
+.floaty {
+  animation: floaty var(--float-duration, 6s) ease-in-out infinite;
+  animation-delay: var(--float-delay, 0s);
+}
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translate3d(0, -14px, 0) scale(1.15);
+    opacity: 0.9;
+  }
+}
+
+/* Brushed-metal texture for the vault door */
+.brushed {
+  background-image: repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.05) 0px,
+      rgba(255, 255, 255, 0.05) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 45%);
+}
+
+/* Lined letter paper */
+.paper {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--line, 2rem) - 1px),
+    rgba(244, 63, 94, 0.09) calc(var(--line, 2rem) - 1px),
+    rgba(244, 63, 94, 0.09) var(--line, 2rem)
+  );
+}
+:global(.dark) .paper {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--line, 2rem) - 1px),
+    rgba(196, 181, 253, 0.08) calc(var(--line, 2rem) - 1px),
+    rgba(196, 181, 253, 0.08) var(--line, 2rem)
+  );
+}
+
+/* Glow pulse for the vault interior */
+.pulseGlow {
+  animation: pulseGlow 3.2s ease-in-out infinite;
+}
+@keyframes pulseGlow {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+/* Hide scrollbars on the slideshow film strip while keeping it scrollable */
+.noScrollbar {
+  scrollbar-width: none;
+}
+.noScrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer::after,
+  .spinSlow,
+  .spinReverse,
+  .gradientText,
+  .kenBurns,
+  .floaty,
+  .pulseGlow {
+    animation: none !important;
+  }
+  .sheen {
+    display: none;
+  }
+}

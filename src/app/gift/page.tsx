@@ -1,13 +1,14 @@
+import type { Metadata } from 'next'
 import GiftInteractive from './GiftInteractive'
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Your Surprise Gift',
-  description: 'A special surprise just for you.',
+  description: 'A little invitation, just for you.',
 }
 
 export default function GiftPage() {
   return (
-    <main className="flex-1 min-h-screen pt-24 pb-20 relative flex items-center justify-center">
+    <main className="relative flex w-full flex-1 flex-col pb-28 pt-24 sm:pt-28 md:pb-16">
       <GiftInteractive />
     </main>
   )

@@ -1,14 +1,23 @@
+# Optional: deploying on Netlify instead of GitHub Pages.
+# The site is a fully static export (next.config.ts -> output: 'export'),
+# so Netlify only needs to build it and serve the ./out folder.
+
 [build]
   command = "npm run build"
   publish = "out"
 
 [build.environment]
+  # Netlify serves the site from the domain root, so no base path.
   PAGES_BASE_PATH = ""
-  NODE_VERSION = "20"
+  NODE_VERSION = "22"
+  # Set NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY in the Netlify UI
+  # (Site settings -> Environment variables) to use a different Supabase project.
 
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-  force = false
+# No catch-all rewrite: every page is pre-rendered (trailingSlash: true makes
+# /letters/ -> /letters/index.html) and unknown URLs get the exported 404.html.
 
+# Next.js build assets have content hashes in their names, so they never change.
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

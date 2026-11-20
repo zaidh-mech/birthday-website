@@ -2,12 +2,36 @@
 @custom-variant dark (&:where(.dark, .dark *));
 @plugin "@tailwindcss/typography";
 
+/* ------------------------------------------------------------------ */
+/*  Design tokens                                                      */
+/* ------------------------------------------------------------------ */
+
 :root {
   --background: #fdfbf7;
   --foreground: #2d2a26;
   --primary: #d4a373;
   --secondary: #e9edc9;
   --accent: #faedcd;
+
+  /* Interaction colours (rose by day, lavender by night) */
+  --ring: #fb7185;
+  --selection: rgb(251 113 133 / 0.28);
+  --scrollbar-thumb: #ead7d3;
+  --scrollbar-thumb-hover: #fb7185;
+  --scrollbar-thumb-accent: rgb(251 113 133 / 0.45);
+}
+
+.dark {
+  --background: #0b0c10;
+  --foreground: #f3f4f6;
+
+  --ring: #c084fc;
+  --selection: rgb(192 132 252 / 0.38);
+  --scrollbar-thumb: rgb(255 255 255 / 0.14);
+  --scrollbar-thumb-hover: #a855f7;
+  --scrollbar-thumb-accent: rgb(192 132 252 / 0.45);
+
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -18,23 +42,319 @@
   --font-cursive: var(--font-dancing), cursive;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
+/*
+ * Shared palette + motion tokens. Use them as regular Tailwind classes:
+ *   bg-cream, bg-night, ease-romantic, animate-float, animate-shimmer,
+ *   animate-wiggle, animate-heartbeat, animate-twinkle, animate-fade-up,
+ *   animate-pop-in, animate-spin-slow, animate-gradient-pan, animate-glow-pulse,
+ *   animate-rise, animate-sway, animate-slide-in-left, animate-drift
+ *
+ * animate-shimmer / animate-gradient-pan move background-position, so pair them
+ * with a gradient and a larger background size, e.g.
+ *   bg-linear-to-r from-rose-400 via-amber-300 to-rose-400 bg-[length:200%_100%] animate-shimmer
+ */
+@theme {
+  --color-cream: #fdfbf7;
+  --color-night: #0b0c10;
+  --color-blush: #fff1f2;
+
+  --ease-romantic: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-springy: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-float-slow: float 9s ease-in-out infinite;
+  --animate-shimmer: shimmer 2.6s linear infinite;
+  --animate-wiggle: wiggle 1s ease-in-out infinite;
+  --animate-heartbeat: heartbeat 1.6s ease-in-out infinite;
+  --animate-twinkle: twinkle 2.8s ease-in-out infinite;
+  --animate-fade-up: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-pop-in: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-spin-slow: spin-slow 14s linear infinite;
+  --animate-gradient-pan: gradient-pan 8s ease infinite;
+  --animate-glow-pulse: glow-pulse 3.2s ease-in-out infinite;
+  --animate-rise: rise 5s ease-in infinite;
+  --animate-sway: sway 3.4s ease-in-out infinite;
+  --animate-slide-in-left: slide-in-left 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-drift: drift 24s ease-in-out infinite alternate;
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-12px);
+    }
+  }
+
+  @keyframes shimmer {
+    from {
+      background-position: 200% 50%;
+    }
+    to {
+      background-position: -200% 50%;
+    }
+  }
+
+  @keyframes wiggle {
+    0%,
+    100% {
+      transform: rotate(-4deg);
+    }
+    50% {
+      transform: rotate(4deg);
+    }
+  }
+
+  @keyframes heartbeat {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    14% {
+      transform: scale(1.14);
+    }
+    28% {
+      transform: scale(1);
+    }
+    42% {
+      transform: scale(1.09);
+    }
+    70% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes twinkle {
+    0%,
+    100% {
+      opacity: 0.35;
+      transform: scale(0.85);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+  }
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes spin-slow {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes gradient-pan {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  @keyframes glow-pulse {
+    0%,
+    100% {
+      opacity: 0.55;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes rise {
+    0% {
+      opacity: 0;
+      transform: translateY(0) scale(0.7);
+    }
+    15% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-140px) scale(1.1);
+    }
+  }
+
+  @keyframes sway {
+    0%,
+    100% {
+      transform: rotate(-6deg);
+    }
+    50% {
+      transform: rotate(6deg);
+    }
+  }
+
+  @keyframes slide-in-left {
+    from {
+      opacity: 0;
+      transform: translateX(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes drift {
+    0% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(3vmax, -2vmax, 0) scale(1.06);
+    }
+    100% {
+      transform: translate3d(-2vmax, 2vmax, 0) scale(0.96);
+    }
+  }
 }
 
-/* Custom scrollbar for elegance */
-::-webkit-scrollbar {
-  width: 8px;
+/* ------------------------------------------------------------------ */
+/*  Base                                                               */
+/* ------------------------------------------------------------------ */
+
+@layer base {
+  html {
+    /* clip (not hidden) so the page never scrolls sideways but sticky still works */
+    overflow-x: clip;
+    scrollbar-gutter: stable;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    overflow-x: clip;
+    background-color: var(--background);
+    color: var(--foreground);
+    transition:
+      background-color 0.7s ease,
+      color 0.7s ease;
+  }
+
+  ::selection {
+    background-color: var(--selection);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 3px;
+  }
+
+  /* WebKit / Blink scrollbars (Firefox and new Chromium use scrollbar-color above) */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+  }
+
+  /* During the circular theme reveal everything snaps to the new theme
+     (the view transition itself does the cross-fade). */
+  html.theme-switching,
+  html.theme-switching *,
+  html.theme-switching *::before,
+  html.theme-switching *::after {
+    transition: none !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
-::-webkit-scrollbar-track {
-  background: transparent;
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }
-::-webkit-scrollbar-thumb {
-  background: #e5e5e5;
-  border-radius: 4px;
+
+/* ------------------------------------------------------------------ */
+/*  Small shared utilities                                             */
+/* ------------------------------------------------------------------ */
+
+/* Thin, rosy (lavender at night) scrollbar for scrollable panels and textareas. */
+@utility custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb-accent) transparent;
+  overscroll-behavior: contain;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb-accent);
+    border: 0;
+    border-radius: 9999px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+  }
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #d4a373;
+
+/* Hide the scrollbar but keep scrolling (horizontal carousels, chip rows). */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* The site's glassy card surface: bg-white/60 + blur + rose border (dark: white/5). */
+@utility glass {
+  background-color: rgb(255 255 255 / 0.6);
+  border: 1px solid var(--color-rose-100, oklch(94.1% 0.03 12.58));
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+
+  &:where(.dark, .dark *) {
+    background-color: rgb(255 255 255 / 0.05);
+    border-color: rgb(255 255 255 / 0.1);
+  }
 }

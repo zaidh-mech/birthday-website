@@ -1,158 +1,176 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { createLetter, fetchLetters, removeLetter, fetchSafeUnlockedOverride, saveSafeUnlockedOverride } from '@/lib/storage'
-import { Save, AlertCircle, CheckCircle2, Unlock } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { fetchLockLetter, saveLockLetter, fetchSafeUnlockedOverride, saveSafeUnlockedOverride } from '@/lib/storage'
+import { AlertCircle, Loader2, LockOpen, RotateCcw, Save } from 'lucide-react'
+import { Banner, PageHeader, errorMessage, ui, useNotice } from '../_components/ui'
 
+/** Same default the Memories page falls back to. */
 const DEFAULT_LETTER_TEXT = `To my dearest [pet name|baby],
 
 From the very first time we went to [place|colombo], I knew you were someone special. I absolutely love your [feature|smile] and how you always make my days brighter. I can't wait to spend [time|forever] with you.
 
 Yours always.`
 
+/** Same pattern the Memories page uses to find the blanks. */
+const BLANK_PATTERN = /\[([^[\]|]+)\|([^[\]]+)\]/g
+
 export default function SafeConfigPage() {
   const [text, setText] = useState('')
+  const [savedText, setSavedText] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState('')
-  const [isError, setIsError] = useState(false)
+  const [toggling, setToggling] = useState(false)
   const [isUnlocked, setIsUnlocked] = useState(false)
+  const [notice, setNotice] = useNotice()
 
   useEffect(() => {
-    async function loadConfig() {
-      const [letters, unlocked] = await Promise.all([
-        fetchLetters(),
-        fetchSafeUnlockedOverride()
-      ])
-      const lockLetter = letters.find(l => l.title === '[LOCK_LETTER]')
-      if (lockLetter) {
-        setText(lockLetter.content)
-      } else {
-        setText(DEFAULT_LETTER_TEXT)
-      }
-      setIsUnlocked(unlocked)
-      setLoading(false)
+    let cancelled = false
+    Promise.all([fetchLockLetter(), fetchSafeUnlockedOverride()])
+      .then(([letter, unlocked]) => {
+        if (cancelled) return
+        const initial = letter ?? DEFAULT_LETTER_TEXT
+        setText(initial)
+        setSavedText(initial)
+        setIsUnlocked(unlocked)
+      })
+      .finally(() => !cancelled && setLoading(false))
+    return () => {
+      cancelled = true
     }
-    loadConfig()
   }, [])
 
+  const blanks = useMemo(() => Array.from(text.matchAll(BLANK_PATTERN)).map((m) => ({ hint: m[1].trim(), answer: m[2].trim() })), [text])
+  const brokenBrackets = useMemo(() => {
+    const withoutBlanks = text.replace(BLANK_PATTERN, '')
+    return /\[[^\]]*\]/.test(withoutBlanks)
+  }, [text])
+  const dirty = text !== savedText
+
   const handleToggleUnlock = async () => {
-    const newVal = !isUnlocked;
-    setIsUnlocked(newVal);
-    await saveSafeUnlockedOverride(newVal);
+    const next = !isUnlocked
+    setIsUnlocked(next)
+    setToggling(true)
+    setNotice(null)
+    try {
+      await saveSafeUnlockedOverride(next)
+      setNotice({
+        tone: 'success',
+        text: next ? 'The safe is open: she goes straight to the memories, no puzzle.' : 'The safe is locked again: she has to fill in the blanks.',
+      })
+    } catch (err) {
+      setIsUnlocked(!next)
+      setNotice({ tone: 'error', text: errorMessage(err) })
+    } finally {
+      setToggling(false)
+    }
   }
 
   async function handleSave() {
+    if (!text.trim()) {
+      setNotice({ tone: 'error', text: 'The letter is empty.' })
+      return
+    }
     setSaving(true)
-    setMessage('')
-    setIsError(false)
-
+    setNotice(null)
     try {
-      // Find and remove old lock letter(s)
-      const letters = await fetchLetters()
-      const oldLetters = letters.filter(l => l.title === '[LOCK_LETTER]')
-      for (const old of oldLetters) {
-        await removeLetter(old.id)
-      }
-
-      // Create new lock letter
-      await createLetter({
-        title: '[LOCK_LETTER]',
-        content: text,
-        occasion: 'lock'
-      })
-
-      setMessage('Love Letter Safe updated successfully!')
+      await saveLockLetter(text)
+      setSavedText(text)
+      setNotice({ tone: 'success', text: 'Love Letter Safe updated.' })
     } catch (err) {
-      console.error(err)
-      setIsError(true)
-      setMessage('Failed to save config.')
+      setNotice({ tone: 'error', text: errorMessage(err) })
     } finally {
       setSaving(false)
     }
   }
 
   if (loading) {
-    return <div className="p-8">Loading...</div>
+    return (
+      <div className="py-16 flex justify-center text-gray-400">
+        <Loader2 className="w-5 h-5 animate-spin" aria-label="Loading" />
+      </div>
+    )
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Love Letter Safe Configuration</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Customize the interactive Love Letter that unlocks the Memories page.
+    <div className="max-w-4xl space-y-6">
+      <PageHeader title="Love Letter Safe" subtitle="The fill-in-the-blanks letter she has to complete to open the Memories page." />
+
+      <Banner notice={notice} onClose={() => setNotice(null)} />
+
+      <div className="bg-white px-4 py-3.5 rounded-2xl border border-gray-200 flex items-center gap-3 shadow-sm">
+        <div className="p-2 bg-rose-50 rounded-lg shrink-0">
+          <LockOpen className="w-5 h-5 text-rose-600" aria-hidden="true" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p id="unlock-label" className="text-sm font-bold text-gray-900 leading-tight">
+            Open the safe for everyone
           </p>
+          <p className="text-xs text-gray-500 mt-0.5">Skips the puzzle on every device.</p>
         </div>
-        
-        {/* Toggle Unlock Override */}
-        <div className="bg-white px-4 py-3 rounded-xl border border-gray-200 flex items-center gap-3 shadow-sm">
-          <div className="p-2 bg-rose-50 rounded-lg">
-            <Unlock className="w-5 h-5 text-rose-600" />
-          </div>
-          <div className="flex-1 mr-4">
-            <p className="text-sm font-bold text-gray-900 leading-none">Unlock globally</p>
-            <p className="text-xs text-gray-500 mt-1">Bypass the puzzle</p>
-          </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input 
-              type="checkbox" 
-              className="sr-only peer" 
-              checked={isUnlocked}
-              onChange={handleToggleUnlock}
-            />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-500"></div>
-          </label>
-        </div>
+        {toggling && <Loader2 className="w-4 h-4 animate-spin text-gray-400 shrink-0" aria-hidden="true" />}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={isUnlocked}
+          aria-labelledby="unlock-label"
+          onClick={handleToggleUnlock}
+          disabled={toggling}
+          className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-300 focus-visible:ring-offset-2 disabled:opacity-60 ${
+            isUnlocked ? 'bg-rose-500' : 'bg-gray-200'
+          }`}
+        >
+          <span className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${isUnlocked ? 'translate-x-6' : 'translate-x-1'}`} />
+        </button>
       </div>
 
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div className="mb-6 space-y-4">
-          <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex gap-3">
-            <AlertCircle className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-            <div className="text-sm text-blue-800 space-y-2">
-              <p><strong>How to create hidden fill-in-the-blanks:</strong></p>
-              <p>Type your letter normally. When you want to create a blank that she has to fill in, use brackets like this: <code>[placeholder|answer]</code>.</p>
-              <ul className="list-disc pl-5 space-y-1">
-                <li><strong>Placeholder:</strong> The hint shown inside the empty box (e.g., &quot;pet name&quot;)</li>
-                <li><strong>Answer:</strong> The exact word she needs to type to unlock it (e.g., &quot;baby&quot;)</li>
-              </ul>
-              <p className="mt-2 font-mono bg-white/50 px-2 py-1 rounded inline-block text-blue-900 border border-blue-200">
-                Example: &quot;I love your [feature|smile] so much!&quot;
-              </p>
-            </div>
+      <div className={ui.card}>
+        <div className="mb-6 bg-sky-50 border border-sky-100 p-4 rounded-xl flex gap-3">
+          <AlertCircle className="w-5 h-5 text-sky-600 shrink-0 mt-0.5" aria-hidden="true" />
+          <div className="text-sm text-sky-900 space-y-2 min-w-0">
+            <p>
+              <strong>How to make a blank:</strong> type <code className="px-1 rounded bg-white/70">[hint|answer]</code>. She sees an empty box showing the hint and has to type the answer (not case-sensitive).
+            </p>
+            <p className="font-mono text-xs bg-white/60 px-2 py-1 rounded inline-block border border-sky-200 break-words">I love your [feature|smile] so much!</p>
           </div>
         </div>
 
-        <div className="space-y-4">
-          <label className="block text-sm font-semibold text-gray-700">
-            Letter Text
-          </label>
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            className="w-full h-80 p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-200 resize-y font-serif text-gray-800"
-            placeholder="Type your letter here..."
-          />
+        <label htmlFor="safe-letter" className="block text-sm font-semibold text-gray-700 mb-2">
+          Letter text
+        </label>
+        <textarea
+          id="safe-letter"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          className={`${ui.letter} h-72 sm:h-80`}
+          placeholder="Type your letter here…"
+        />
+
+        <div className="mt-4 rounded-xl bg-gray-50 border border-gray-100 p-3 text-xs text-gray-600 space-y-2">
+          <p className="font-semibold text-gray-700">
+            {blanks.length === 0 ? 'No blanks yet: she would unlock the memories without typing anything.' : `${blanks.length} blank${blanks.length === 1 ? '' : 's'} she has to fill in:`}
+          </p>
+          {blanks.length > 0 && (
+            <ul className="flex flex-wrap gap-1.5">
+              {blanks.map((b, i) => (
+                <li key={`${b.hint}-${i}`} className="rounded-full bg-white border border-gray-200 px-2.5 py-1">
+                  <span className="text-gray-400">{b.hint}</span> → <span className="font-semibold text-rose-600">{b.answer}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {brokenBrackets && <p className="text-amber-700">Some [brackets] are missing the “|answer” part, so they will show as plain text.</p>}
         </div>
 
-        <div className="mt-6 flex items-center gap-4">
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 px-6 py-2.5 bg-rose-600 text-white font-medium rounded-xl hover:bg-rose-700 transition-colors disabled:opacity-70"
-          >
-            <Save className="w-4 h-4" />
-            {saving ? 'Saving...' : 'Save Configuration'}
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <button type="button" onClick={handleSave} disabled={saving || !dirty} className={ui.roseButton}>
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Save className="w-4 h-4" aria-hidden="true" />}
+            {saving ? 'Saving…' : dirty ? 'Save letter' : 'Saved'}
           </button>
-
-          {message && (
-            <span className={`flex items-center gap-2 text-sm font-medium ${isError ? 'text-red-600' : 'text-emerald-600'}`}>
-              {!isError && <CheckCircle2 className="w-4 h-4" />}
-              {message}
-            </span>
-          )}
+          <button type="button" onClick={() => setText(DEFAULT_LETTER_TEXT)} disabled={saving || text === DEFAULT_LETTER_TEXT} className={ui.secondaryButton}>
+            <RotateCcw className="w-4 h-4" aria-hidden="true" /> Use example letter
+          </button>
+          {dirty && <span className="text-xs text-amber-600">Unsaved changes</span>}
         </div>
       </div>
     </div>

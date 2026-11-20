@@ -430,6 +430,46 @@ export const places: Place[] = [
   }
 ]
 
+export const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6]
+/** Used when a place doesn't say which days count as the weekend (Fri, Sat, Sun). */
+export const DEFAULT_WEEKEND_DAYS = [5, 6, 0]
+export const SHORT_DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+/** Monday-first order, the way schedules are usually written. */
+export const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0]
+
+/** Days (0 = Sun … 6 = Sat) on which the place uses its weekend schedule. */
+export function getWeekendDays(rules?: PlaceScheduleRules): number[] {
+  const open = rules?.daysOpen ?? ALL_DAYS
+  return (rules?.weekendDays ?? DEFAULT_WEEKEND_DAYS).filter((d) => open.includes(d))
+}
+
+/** Open days that use the weekday schedule. */
+export function getWeekdayDays(rules?: PlaceScheduleRules): number[] {
+  const open = rules?.daysOpen ?? ALL_DAYS
+  const weekend = rules?.weekendDays ?? DEFAULT_WEEKEND_DAYS
+  return open.filter((d) => !weekend.includes(d))
+}
+
+/**
+ * Human label for a set of days, e.g. [5, 6, 0] -> "Fri–Sun", [1, 2, 3, 4] -> "Mon–Thu",
+ * [0] -> "Sun", [1, 3] -> "Mon, Wed", all seven -> "Every day". Empty -> "".
+ */
+export function describeDays(days: number[]): string {
+  const positions = Array.from(new Set(days.filter((d) => d >= 0 && d <= 6).map((d) => WEEK_ORDER.indexOf(d)))).sort((a, b) => a - b)
+  if (positions.length === 0) return ''
+  if (positions.length === 7) return 'Every day'
+  const runs: number[][] = []
+  for (const p of positions) {
+    const last = runs[runs.length - 1]
+    if (last && p === last[last.length - 1] + 1) last.push(p)
+    else runs.push([p])
+  }
+  const name = (p: number) => SHORT_DAY_NAMES[WEEK_ORDER[p]]
+  return runs
+    .map((run) => (run.length === 1 ? name(run[0]) : run.length === 2 ? `${name(run[0])} & ${name(run[1])}` : `${name(run[0])}–${name(run[run.length - 1])}`))
+    .join(', ')
+}
+
 export interface DateAvailability {
   dayName: string
   formattedDate: string
@@ -456,13 +496,15 @@ export function evaluatePlaceForDate(place: Place, dateStr: string): DateAvailab
 
   if (dateStr) {
     const parts = dateStr.split('-').map(Number)
-    if (parts.length === 3) {
+    if (parts.length === 3 && parts.every((n) => Number.isFinite(n))) {
       const year = parts[0]
       const month = parts[1] - 1
       const day = parts[2]
       const d = new Date(year, month, day)
-      dayOfWeek = d.getDay()
-      formattedDate = `${dayNames[dayOfWeek]}, ${monthNames[month]} ${day}, ${year}`
+      if (!Number.isNaN(d.getTime())) {
+        dayOfWeek = d.getDay()
+        formattedDate = `${dayNames[dayOfWeek]}, ${monthNames[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`
+      }
     }
   }
 
@@ -483,9 +525,9 @@ export function evaluatePlaceForDate(place: Place, dateStr: string): DateAvailab
     }
   }
 
-  const daysOpen = rules.daysOpen || [0, 1, 2, 3, 4, 5, 6]
+  const daysOpen = rules.daysOpen || ALL_DAYS
   const isOpen = daysOpen.includes(dayOfWeek)
-  const weekendDays = rules.weekendDays || [5, 6, 0] // Default Fri, Sat, Sun
+  const weekendDays = rules.weekendDays || DEFAULT_WEEKEND_DAYS
   const isWeekend = weekendDays.includes(dayOfWeek)
 
   let activeSchedule: DaySchedule | undefined

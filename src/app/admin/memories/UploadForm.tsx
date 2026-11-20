@@ -1,207 +1,227 @@
 'use client'
 
-import { useRef, useState, useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createMemory, updateMemory } from '@/lib/storage'
 import { Memory } from '@/data/initialData'
-import { Upload, Link as LinkIcon, Image as ImageIcon } from 'lucide-react'
+import { Upload, Link as LinkIcon, Image as ImageIcon, Loader2 } from 'lucide-react'
+import { Banner, errorMessage, ui, useFilePreview, validateImageFile, type Notice } from '../_components/ui'
 
-export default function UploadForm({ onMemorySaved, editMemory, onCancelEdit }: { onMemorySaved: (memory: Memory) => void, editMemory?: Memory | null, onCancelEdit?: () => void }) {
-  const formRef = useRef<HTMLFormElement>(null)
+type Mode = 'file' | 'url'
+
+const isHttpUrl = (value: string) => /^https?:\/\/\S+$/i.test(value.trim())
+
+export default function UploadForm({
+  onMemorySaved,
+  editMemory,
+  onCancelEdit,
+}: {
+  onMemorySaved: (memory: Memory) => void
+  editMemory?: Memory | null
+  onCancelEdit?: () => void
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [title, setTitle] = useState('')
   const [caption, setCaption] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [preview, setPreview] = useState<string | null>(null)
   const [imageUrlInput, setImageUrlInput] = useState('')
-  const [useUrlMode, setUseUrlMode] = useState(false)
+  const [mode, setMode] = useState<Mode>('file')
   const [uploading, setUploading] = useState(false)
+  const [dragging, setDragging] = useState(false)
+  const [notice, setNotice] = useState<Notice>(null)
+  const filePreview = useFilePreview(selectedFile)
 
   useEffect(() => {
+    setNotice(null)
+    setSelectedFile(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
     if (editMemory) {
       setTitle(editMemory.title)
       setCaption(editMemory.caption)
-      setPreview(editMemory.imagePath)
-      if (editMemory.imagePath && editMemory.imagePath.startsWith('http')) {
-        setUseUrlMode(true)
-        setImageUrlInput(editMemory.imagePath)
-      } else {
-        setUseUrlMode(false)
-        setImageUrlInput('')
-      }
-      setSelectedFile(null)
+      const external = editMemory.imagePath.startsWith('http') && !editMemory.imagePath.includes('/storage/v1/object/public/')
+      setMode(external ? 'url' : 'file')
+      setImageUrlInput(external ? editMemory.imagePath : '')
     } else {
       setTitle('')
       setCaption('')
-      setPreview(null)
       setImageUrlInput('')
-      setUseUrlMode(false)
-      setSelectedFile(null)
+      setMode('file')
     }
   }, [editMemory])
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setSelectedFile(file)
-      const reader = new FileReader()
-      reader.onload = () => {
-        setPreview(reader.result as string)
-      }
-      reader.readAsDataURL(file)
-    } else {
-      setSelectedFile(null)
-      setPreview(editMemory?.imagePath || null)
-    }
-  }
+  const existingImage = editMemory?.imagePath || null
+  const previewSrc = mode === 'file' ? filePreview || existingImage : isHttpUrl(imageUrlInput) ? imageUrlInput.trim() : null
 
-  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setImageUrlInput(e.target.value)
-    setPreview(e.target.value || null)
+  const pickFile = (file: File | null | undefined) => {
+    if (!file) return
+    const problem = validateImageFile(file)
+    if (problem) {
+      setNotice({ tone: 'error', text: problem })
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
+    setNotice(null)
+    setSelectedFile(file)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!useUrlMode && !selectedFile && !preview) {
-      alert('Please select a photo to upload.')
+    setNotice(null)
+    if (!title.trim()) {
+      setNotice({ tone: 'error', text: 'Please give the memory a title.' })
       return
     }
-    if (useUrlMode && !imageUrlInput && !preview) {
-      alert('Please enter a photo URL.')
+    if (mode === 'file' && !selectedFile && !editMemory) {
+      setNotice({ tone: 'error', text: 'Please choose a photo to upload.' })
       return
     }
-    if (!title || !caption) {
-      alert('Please enter a title and caption.')
+    if (mode === 'url' && !isHttpUrl(imageUrlInput)) {
+      setNotice({ tone: 'error', text: 'Please paste a full photo link that starts with https://' })
       return
     }
 
     setUploading(true)
     try {
-      let savedMemory: Memory;
-      
-      if (editMemory) {
-        savedMemory = await updateMemory(editMemory.id, {
-          title,
-          caption,
-          imagePath: useUrlMode ? imageUrlInput : preview || undefined,
-          file: useUrlMode ? null : selectedFile,
-        })
-      } else {
-        savedMemory = await createMemory({
-          title,
-          caption,
-          imagePath: useUrlMode ? imageUrlInput : preview || undefined,
-          file: useUrlMode ? null : selectedFile,
-        })
+      const payload = {
+        title: title.trim(),
+        caption: caption.trim(),
+        imagePath: mode === 'url' ? imageUrlInput.trim() : editMemory?.imagePath,
+        file: mode === 'file' ? selectedFile : null,
       }
+      const saved = editMemory ? await updateMemory(editMemory.id, payload) : await createMemory(payload)
+      onMemorySaved(saved)
 
-      onMemorySaved(savedMemory)
-      
       if (!editMemory) {
         setTitle('')
         setCaption('')
-        setPreview(null)
         setSelectedFile(null)
         setImageUrlInput('')
-        formRef.current?.reset()
+        if (fileInputRef.current) fileInputRef.current.value = ''
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error(err)
-      alert('Error saving memory: ' + (err.message || 'Unknown error'))
+      setNotice({ tone: 'error', text: errorMessage(err) })
     } finally {
       setUploading(false)
     }
   }
 
+  const tabClass = (active: boolean) =>
+    `flex items-center gap-2 text-xs font-semibold uppercase tracking-wider pb-1.5 border-b-2 transition-colors ${
+      active ? 'text-rose-600 border-rose-600' : 'text-gray-400 border-transparent hover:text-gray-600'
+    }`
+
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
-      <div className="flex gap-4 border-b border-gray-100 pb-3">
-        <button
-          type="button"
-          onClick={() => setUseUrlMode(false)}
-          className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider pb-1 transition-colors ${
-            !useUrlMode ? 'text-rose-600 border-b-2 border-rose-600' : 'text-gray-400 hover:text-gray-600'
-          }`}
-        >
-          <Upload className="w-3.5 h-3.5" /> {editMemory ? 'Change File' : 'Upload File'}
+    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+      <Banner notice={notice} onClose={() => setNotice(null)} />
+
+      <div className="flex gap-5 border-b border-gray-100" role="group" aria-label="Photo source">
+        <button type="button" aria-pressed={mode === 'file'} onClick={() => setMode('file')} className={tabClass(mode === 'file')}>
+          <Upload className="w-3.5 h-3.5" aria-hidden="true" /> {editMemory ? 'Change file' : 'Upload file'}
         </button>
-        <button
-          type="button"
-          onClick={() => setUseUrlMode(true)}
-          className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider pb-1 transition-colors ${
-            useUrlMode ? 'text-rose-600 border-b-2 border-rose-600' : 'text-gray-400 hover:text-gray-600'
-          }`}
-        >
-          <LinkIcon className="w-3.5 h-3.5" /> Photo URL
+        <button type="button" aria-pressed={mode === 'url'} onClick={() => setMode('url')} className={tabClass(mode === 'url')}>
+          <LinkIcon className="w-3.5 h-3.5" aria-hidden="true" /> Photo link
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <input 
-            type="text" 
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Memory Title (e.g. Sunset in Venice)" 
-            required 
-            className="px-4 py-2.5 border border-gray-200 rounded-xl w-full text-sm focus:outline-none focus:ring-2 focus:ring-rose-200" 
-          />
-          <textarea 
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            placeholder="Caption or story behind this photo..." 
-            rows={4} 
-            required 
-            className="px-4 py-3 border border-gray-200 rounded-xl w-full text-sm focus:outline-none focus:ring-2 focus:ring-rose-200 custom-scrollbar"
-          ></textarea>
-          
-          {useUrlMode ? (
-            <input 
-              type="url" 
-              value={imageUrlInput}
-              onChange={handleUrlChange}
-              placeholder="Paste direct image URL (https://...)" 
-              required={!editMemory}
-              className="px-4 py-2.5 border border-gray-200 rounded-xl w-full text-sm focus:outline-none focus:ring-2 focus:ring-rose-200" 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
+        <div className="space-y-4 min-w-0">
+          <div>
+            <label htmlFor="memory-title" className={ui.label}>
+              Title
+            </label>
+            <input
+              id="memory-title"
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="e.g. Sunset at Galle Face"
+              required
+              maxLength={120}
+              className={ui.input}
             />
-          ) : (
-            <div className="border-2 border-dashed border-gray-200 rounded-xl p-5 text-center bg-gray-50/50">
-              <input 
-                type="file" 
-                accept="image/*" 
-                required={!preview}
-                onChange={handleFileChange} 
-                className="block w-full text-xs text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100 cursor-pointer" 
+          </div>
+          <div>
+            <label htmlFor="memory-caption" className={ui.label}>
+              Caption / the story behind it <span className="font-normal text-gray-400">(optional)</span>
+            </label>
+            <textarea
+              id="memory-caption"
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              placeholder="What were we doing, what made it special…"
+              rows={4}
+              className={ui.textarea}
+            />
+          </div>
+
+          {mode === 'url' ? (
+            <div>
+              <label htmlFor="memory-url" className={ui.label}>
+                Photo link
+              </label>
+              <input
+                id="memory-url"
+                type="url"
+                inputMode="url"
+                value={imageUrlInput}
+                onChange={(e) => setImageUrlInput(e.target.value)}
+                placeholder="https://…"
+                className={ui.input}
               />
+            </div>
+          ) : (
+            <div
+              onDragOver={(e) => {
+                e.preventDefault()
+                setDragging(true)
+              }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={(e) => {
+                e.preventDefault()
+                setDragging(false)
+                pickFile(e.dataTransfer.files?.[0])
+              }}
+              className={`border-2 border-dashed rounded-xl p-4 sm:p-5 text-center transition-colors ${dragging ? 'border-rose-400 bg-rose-50' : 'border-gray-200 bg-gray-50/50'}`}
+            >
+              <label htmlFor="memory-file" className="block text-xs text-gray-500 mb-2">
+                {editMemory ? 'Pick a new photo to replace the current one (optional)' : 'Pick a photo or drop it here'}
+              </label>
+              <input
+                id="memory-file"
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={(e) => pickFile(e.target.files?.[0])}
+                className="block w-full max-w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100 cursor-pointer"
+              />
+              {selectedFile && (
+                <p className="mt-2 text-[11px] text-gray-400 truncate">
+                  {selectedFile.name} · {(selectedFile.size / 1024 / 1024).toFixed(1)} MB (large photos are shrunk before upload)
+                </p>
+              )}
             </div>
           )}
         </div>
-        
-        <div className="bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-center overflow-hidden min-h-[160px] md:h-auto relative">
-          {preview ? (
-            <img src={preview} alt="Preview" className="w-full h-full max-h-60 object-cover" />
+
+        <div className="bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-center overflow-hidden min-h-[180px] md:min-h-[240px] relative">
+          {previewSrc ? (
+            <img src={previewSrc} alt="Preview of the memory photo" className="absolute inset-0 w-full h-full object-cover [object-position:center_30%]" />
           ) : (
             <div className="flex flex-col items-center text-gray-400 gap-1">
-              <ImageIcon className="w-8 h-8 opacity-40" />
-              <span className="text-xs font-light">Image Preview</span>
+              <ImageIcon className="w-8 h-8 opacity-40" aria-hidden="true" />
+              <span className="text-xs font-light">Photo preview</span>
             </div>
           )}
         </div>
       </div>
-      
-      <div className="flex gap-3 pt-2">
-        <button 
-          type="submit" 
-          disabled={uploading}
-          className="bg-gray-900 text-white px-6 py-2.5 rounded-xl font-medium text-sm hover:bg-gray-800 transition-colors disabled:opacity-50"
-        >
-          {uploading ? 'Saving...' : (editMemory ? 'Update Memory' : 'Save Memory')}
+
+      <div className="flex flex-wrap gap-3 pt-1">
+        <button type="submit" disabled={uploading} className={ui.primaryButton}>
+          {uploading && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
+          {uploading ? (selectedFile ? 'Uploading…' : 'Saving…') : editMemory ? 'Update memory' : 'Save memory'}
         </button>
         {editMemory && onCancelEdit && (
-          <button 
-            type="button" 
-            onClick={onCancelEdit}
-            disabled={uploading}
-            className="bg-gray-100 text-gray-700 px-6 py-2.5 rounded-xl font-medium text-sm hover:bg-gray-200 transition-colors disabled:opacity-50"
-          >
+          <button type="button" onClick={onCancelEdit} disabled={uploading} className={ui.secondaryButton}>
             Cancel
           </button>
         )}

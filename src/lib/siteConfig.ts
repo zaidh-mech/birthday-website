@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { DEFAULT_SITE_CONFIG, SiteConfig, Coupon, WheelPrize } from '@/data/love'
-import { getSupabaseClient } from './supabase'
+import { getSetting, upsertSetting } from './supabase'
 
 /**
  * Editable site content (names, dates, reasons, coupons, wheel prizes, words).
@@ -82,22 +82,14 @@ const listeners = new Set<(c: SiteConfig) => void>()
 export function fetchSiteConfig(force = false): Promise<SiteConfig> {
   if (inflight && !force) return inflight
   inflight = (async () => {
-    const supabase = getSupabaseClient()
-    if (supabase) {
+    const result = await getSetting(TITLE)
+    if (result.reachable && result.content) {
       try {
-        const { data, error } = await supabase
-          .from('letters')
-          .select('id, content, date')
-          .eq('title', TITLE)
-          .order('date', { ascending: false })
-          .limit(1)
-        if (!error && data && data.length > 0 && data[0].content) {
-          const parsed = sanitize(JSON.parse(data[0].content))
-          writeLocal(parsed)
-          return parsed
-        }
+        const parsed = sanitize(JSON.parse(result.content))
+        writeLocal(parsed)
+        return parsed
       } catch (e) {
-        console.warn('Supabase fetch site config failed, using local copy:', e)
+        console.warn('Site config in the cloud is not valid JSON, using local copy:', e)
       }
     }
     return readLocal() ?? DEFAULT_SITE_CONFIG
@@ -112,22 +104,8 @@ export function fetchSiteConfig(force = false): Promise<SiteConfig> {
 /** Saves the config to the cloud (when connected) and locally. */
 export async function saveSiteConfig(config: SiteConfig): Promise<SiteConfig> {
   const clean = sanitize(config)
-  const serialized = JSON.stringify(clean)
-  const supabase = getSupabaseClient()
-  if (supabase) {
-    const { data, error } = await supabase.from('letters').select('id').eq('title', TITLE).order('date', { ascending: false })
-    if (error) throw new Error(error.message)
-    const now = new Date().toISOString()
-    if (data && data.length > 0) {
-      const [keep, ...dupes] = data
-      const res = await supabase.from('letters').update({ content: serialized, date: now }).eq('id', keep.id)
-      if (res.error) throw new Error(res.error.message)
-      if (dupes.length) await supabase.from('letters').delete().in('id', dupes.map((d: { id: string }) => d.id))
-    } else {
-      const res = await supabase.from('letters').insert({ title: TITLE, content: serialized, occasion: 'config', date: now })
-      if (res.error) throw new Error(res.error.message)
-    }
-  }
+  // Throws a readable Error when the cloud is connected but the write fails.
+  await upsertSetting(TITLE, JSON.stringify(clean), 'config')
   writeLocal(clean)
   current = clean
   inflight = Promise.resolve(clean)

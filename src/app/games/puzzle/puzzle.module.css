@@ -1,0 +1,111 @@
+/* Small keyframe helpers for the picture puzzle (motion-heavy parts use framer-motion). */
+
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0);
+  }
+  20% {
+    transform: translateX(-4px) rotate(-1.5deg);
+  }
+  40% {
+    transform: translateX(4px) rotate(1.5deg);
+  }
+  60% {
+    transform: translateX(-3px) rotate(-0.75deg);
+  }
+  80% {
+    transform: translateX(2px) rotate(0.5deg);
+  }
+}
+
+.wiggle {
+  animation: wiggle 380ms ease-in-out;
+}
+
+@keyframes heartbeat {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.45;
+  }
+  15% {
+    transform: scale(1.18);
+    opacity: 0.85;
+  }
+  30% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  45% {
+    transform: scale(1.1);
+    opacity: 0.75;
+  }
+}
+
+.heartbeat {
+  animation: heartbeat 2.2s ease-in-out infinite;
+}
+
+@keyframes aura {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.02);
+  }
+}
+
+.aura {
+  animation: aura 6s ease-in-out infinite;
+}
+
+/* A piece just slid into its home position. Invisible by default, so with
+   reduced motion (animation: none) nothing flashes. */
+@keyframes homeFlash {
+  0% {
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.homeFlash {
+  opacity: 0;
+  animation: homeFlash 900ms ease-out;
+}
+
+/* Hide the scrollbar of the photo strip but keep it scrollable. */
+.strip {
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+}
+
+.strip::-webkit-scrollbar {
+  display: none;
+}
+
+.noCallout {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wiggle,
+  .heartbeat,
+  .aura,
+  .homeFlash {
+    animation: none;
+  }
+}

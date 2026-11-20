@@ -1,0 +1,171 @@
+/* Candle flames: the wrapper handles blowing out / relighting, the inner group flickers. */
+.flameWrap {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transition:
+    transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.35s ease;
+}
+
+.flameOut {
+  transform: scale(0.05, 0.2);
+  opacity: 0;
+}
+
+.flame {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: flicker 1.4s ease-in-out infinite;
+}
+
+@keyframes flicker {
+  0%,
+  100% {
+    transform: scale(1, 1) skewX(0deg);
+  }
+  18% {
+    transform: scale(0.94, 1.08) skewX(2.5deg);
+  }
+  36% {
+    transform: scale(1.04, 0.94) skewX(-2deg);
+  }
+  54% {
+    transform: scale(0.97, 1.1) skewX(1.5deg);
+  }
+  72% {
+    transform: scale(1.03, 0.96) skewX(-1deg);
+  }
+  86% {
+    transform: scale(0.98, 1.04) skewX(0.5deg);
+  }
+}
+
+.glowWrap {
+  transition: opacity 0.5s ease;
+}
+
+.glowOut {
+  opacity: 0;
+}
+
+.glow {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: glow 2.4s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    opacity: 0.75;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
+
+/* Smoke wisps after a candle goes out. */
+.smoke path {
+  fill: none;
+  stroke: rgba(120, 113, 108, 0.55);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-dasharray: 64;
+  stroke-dashoffset: 64;
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: smoke 1.9s ease-out forwards;
+}
+
+:global(.dark) .smoke path {
+  stroke: rgba(226, 232, 240, 0.5);
+}
+
+.smoke path:nth-child(2) {
+  animation-delay: 0.15s;
+  stroke-width: 1.8;
+}
+
+.smoke path:nth-child(3) {
+  animation-delay: 0.3s;
+  stroke-width: 1.4;
+}
+
+@keyframes smoke {
+  0% {
+    stroke-dashoffset: 64;
+    opacity: 0.9;
+    transform: translateY(0) scaleX(1);
+  }
+  55% {
+    stroke-dashoffset: 0;
+    opacity: 0.6;
+  }
+  100% {
+    stroke-dashoffset: -40;
+    opacity: 0;
+    transform: translateY(-16px) scaleX(1.6);
+  }
+}
+
+/* Keyboard focus ring around a candle. */
+.candle {
+  outline: none;
+  cursor: pointer;
+}
+
+.focusRing {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.candle:focus-visible .focusRing {
+  opacity: 1;
+}
+
+/* A shooting star across the cake once the wish is made. */
+.shootingStar {
+  position: absolute;
+  top: 12%;
+  left: -20%;
+  width: 120px;
+  height: 2px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, transparent, rgba(253, 224, 71, 0.9) 70%, #fff);
+  box-shadow: 0 0 12px 2px rgba(253, 224, 71, 0.45);
+  transform: translate(0, 0) rotate(18deg);
+  opacity: 0;
+  animation: shoot 1.6s ease-out 0.4s forwards;
+}
+
+@keyframes shoot {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(18deg);
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(520px, 170px) rotate(18deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flame,
+  .glow {
+    animation: none;
+  }
+  .flameWrap {
+    transition-duration: 0.01ms;
+  }
+  .smoke path {
+    animation-duration: 0.01ms;
+  }
+  .shootingStar {
+    display: none;
+  }
+}

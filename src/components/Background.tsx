@@ -1,118 +1,157 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
+import { usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useEffect, useState } from 'react'
+import { normalizePath } from '@/lib/basePath'
+import { SkyEngine, type SkyTheme } from '@/components/effects/sky/skyEngine'
+import styles from '@/components/effects/sky/sky.module.css'
 
+function domTheme(): SkyTheme {
+  return document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+}
+
+/**
+ * The site-wide backdrop: warm gradient washes with tumbling petals by day,
+ * a starry night sky with a glowing moon by night. One canvas + a few static
+ * CSS layers, behind everything and never interactive. Hidden in Admin Studio.
+ */
 export default function Background() {
-  const { theme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-  const [stars, setStars] = useState<{ id: number; x: number; y: number; size: number; delay: number }[]>([])
+  const path = normalizePath(usePathname())
+  if (path === '/admin' || path.startsWith('/admin/')) return null
+  return <Sky />
+}
+
+function Sky() {
+  const rootRef = useRef<HTMLDivElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const engineRef = useRef<SkyEngine | null>(null)
+  const { resolvedTheme } = useTheme()
 
   useEffect(() => {
-    setMounted(true)
-    const generatedStars = Array.from({ length: 100 }).map((_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: Math.random() * 2.5 + 0.5,
-      delay: Math.random() * 4
-    }))
-    setStars(generatedStars)
+    const root = rootRef.current
+    const canvas = canvasRef.current
+    if (!root || !canvas) return
+
+    const reduceQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const fineQuery = window.matchMedia('(hover: hover) and (pointer: fine)')
+    const rect = canvas.getBoundingClientRect()
+
+    const engine = new SkyEngine(canvas, {
+      theme: domTheme(),
+      reducedMotion: reduceQuery.matches,
+      width: rect.width || window.innerWidth,
+      height: rect.height || window.innerHeight,
+      onParallax: (x, y) => {
+        root.style.setProperty('--px', x.toFixed(3))
+        root.style.setProperty('--py', y.toFixed(3))
+      },
+    })
+    engineRef.current = engine
+    if (!document.hidden) engine.start()
+    const reveal = requestAnimationFrame(() => canvas.classList.add(styles.canvasReady))
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      const box = entries[0]?.contentRect
+      if (box) engine.setSize(box.width, box.height)
+    })
+    resizeObserver.observe(canvas)
+
+    // DPR can change without the canvas changing size (dragging between monitors)
+    const onResize = () => {
+      const r = canvas.getBoundingClientRect()
+      engine.setSize(r.width, r.height)
+    }
+
+    const onVisibility = () => {
+      if (document.hidden) engine.stop()
+      else engine.start()
+    }
+
+    const onPointer = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse' || !fineQuery.matches || reduceQuery.matches) return
+      engine.setPointer((e.clientX / window.innerWidth) * 2 - 1, (e.clientY / window.innerHeight) * 2 - 1)
+    }
+    const onPointerLeave = () => engine.setPointer(0, 0)
+
+    const onReduceChange = () => {
+      engine.setReducedMotion(reduceQuery.matches)
+      if (reduceQuery.matches) {
+        root.style.setProperty('--px', '0')
+        root.style.setProperty('--py', '0')
+      }
+    }
+
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('resize', onResize)
+    window.addEventListener('pointermove', onPointer, { passive: true })
+    document.documentElement.addEventListener('pointerleave', onPointerLeave)
+    reduceQuery.addEventListener('change', onReduceChange)
+
+    return () => {
+      cancelAnimationFrame(reveal)
+      resizeObserver.disconnect()
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('resize', onResize)
+      window.removeEventListener('pointermove', onPointer)
+      document.documentElement.removeEventListener('pointerleave', onPointerLeave)
+      reduceQuery.removeEventListener('change', onReduceChange)
+      engine.destroy()
+      engineRef.current = null
+    }
   }, [])
 
-  if (!mounted) return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none -z-50 bg-[#fdfbf7]" />
-  )
-
-  const isNightMode = theme === 'dark'
+  useEffect(() => {
+    const engine = engineRef.current
+    if (!engine || !resolvedTheme) return
+    // During the circular theme reveal the view transition does the fade, so snap.
+    const instant = document.documentElement.classList.contains('theme-switching')
+    engine.setTheme(resolvedTheme === 'dark' ? 'dark' : 'light', instant)
+  }, [resolvedTheme])
 
   return (
-    <div className="fixed inset-0 overflow-hidden pointer-events-none -z-50 transition-colors duration-1000 bg-[#fdfbf7] dark:bg-[#0B0C10]">
-      {/* Light Mode Elements */}
-      <AnimatePresence>
-        {!isNightMode && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1.5 }}
-            className="absolute inset-0"
-          >
-            <div
-              className="absolute top-[10%] left-[10%] w-[60vw] h-[60vw] rounded-full hidden md:block"
-              style={{ background: 'radial-gradient(circle, rgba(255, 228, 230, 0.6) 0%, transparent 70%)' }}
-            />
-            <div
-              className="absolute bottom-[0%] right-[0%] w-[50vw] h-[50vw] rounded-full hidden md:block"
-              style={{ background: 'radial-gradient(circle, rgba(254, 243, 199, 0.6) 0%, transparent 70%)' }}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div
+      ref={rootRef}
+      aria-hidden="true"
+      className={`pointer-events-none fixed inset-0 -z-50 h-lvh select-none overflow-hidden ${styles.root}`}
+    >
+      {/* Day: warm washes + a soft sun glow */}
+      <div className={`${styles.layer} ${styles.day}`}>
+        <div className={`${styles.fill} ${styles.dayBase}`} />
+        <div className={styles.parallaxFar}>
+          <div className={`${styles.blob} ${styles.blobRose}`} />
+          <div className={`${styles.blob} ${styles.blobGold}`} />
+          <div className={`${styles.blob} ${styles.blobLilac}`} />
+          <div className={`${styles.blob} ${styles.blobPeach}`} />
+        </div>
+        <div className={`${styles.blob} ${styles.sunGlow}`} />
+      </div>
 
-      {/* Night Sky Background */}
-      <AnimatePresence>
-        {isNightMode && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1.5, ease: "easeInOut" }}
-            className="absolute inset-0"
-          >
-            {/* Deep space radial glow (Milky Way base) */}
-            <div className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] rounded-full mix-blend-screen opacity-40 blur-[120px]" style={{ background: 'radial-gradient(circle, #2d1b6e 0%, transparent 70%)' }} />
-            <div className="absolute bottom-[-10%] right-[-10%] w-[80vw] h-[80vw] rounded-full mix-blend-screen opacity-30 blur-[100px]" style={{ background: 'radial-gradient(circle, #1f4068 0%, transparent 70%)' }} />
-            
-            {/* Additional Milky Way streak */}
-            <div className="absolute top-[20%] left-[20%] w-[120vw] h-[30vw] rounded-full mix-blend-screen opacity-20 blur-[100px] -rotate-45" style={{ background: 'radial-gradient(ellipse, #4c1d95 0%, transparent 60%)' }} />
+      {/* Night: deep sky, nebula clouds, the milky way */}
+      <div className={`${styles.layer} ${styles.night}`}>
+        <div className={`${styles.fill} ${styles.nightBase}`} />
+        <div className={styles.parallaxFar}>
+          <div className={`${styles.blob} ${styles.nebulaViolet}`} />
+          <div className={`${styles.blob} ${styles.nebulaBlue}`} />
+          <div className={`${styles.blob} ${styles.nebulaRose}`} />
+        </div>
+        <div className={styles.parallaxMid}>
+          <div className={styles.milkyWay} />
+          <div className={styles.milkyCore} />
+        </div>
+        <div className={`${styles.fill} ${styles.vignette}`} />
+      </div>
 
-            {/* Realistic Moon */}
-            <motion.div 
-              initial={{ y: 50, opacity: 0 }}
-              animate={{ y: 0, opacity: 0.9 }}
-              transition={{ duration: 2, ease: "easeOut", delay: 0.5 }}
-              className="absolute top-[12%] right-[12%] w-40 h-40 md:w-64 md:h-64 rounded-full overflow-hidden mix-blend-screen"
-            >
-              {/* We use a real photo of the moon on a black background, and mix-blend-screen makes the black completely invisible, leaving only a stunning, photorealistic moon! */}
-              <div 
-                className="w-full h-full bg-contain bg-center bg-no-repeat shadow-[0_0_100px_30px_rgba(255,255,255,0.15)] rounded-full"
-                style={{ 
-                  backgroundImage: 'url("https://upload.wikimedia.org/wikipedia/commons/thumb/e/e1/FullMoon2010.jpg/1024px-FullMoon2010.jpg")',
-                }}
-              />
-            </motion.div>
+      {/* Stars, shooting stars, petals, hearts, bokeh */}
+      <canvas ref={canvasRef} className={styles.canvas} />
 
-            {/* Stars */}
-            {stars.map((star) => (
-              <motion.div
-                key={star.id}
-                className="absolute bg-white rounded-full"
-                style={{
-                  left: `${star.x}%`,
-                  top: `${star.y}%`,
-                  width: `${star.size}px`,
-                  height: `${star.size}px`,
-                  boxShadow: `0 0 ${star.size * 2}px rgba(255, 255, 255, 0.8)`
-                }}
-                animate={{
-                  opacity: [0.2, 1, 0.2],
-                  scale: [1, 1.2, 1],
-                  x: [0, Math.random() * 20 - 10], 
-                  y: [0, Math.random() * 20 - 10]
-                }}
-                transition={{
-                  duration: Math.random() * 5 + 5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: star.delay
-                }}
-              />
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* The moon rises when night falls */}
+      <div className={styles.moonParallax}>
+        <div className={styles.moonRise}>
+          <div className={styles.moonHalo} />
+          <div className={styles.moon} />
+        </div>
+      </div>
     </div>
   )
 }

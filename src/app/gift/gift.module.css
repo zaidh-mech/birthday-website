@@ -1,0 +1,116 @@
+/* ==========================================================================
+   "ADMIT TWO" ticket — the notches are cut with two half-size mask layers
+   (each layer carries one notch; together they cover the whole piece).
+   Phones: stub below the body. sm+: stub on the right.
+   ========================================================================== */
+
+.ticketMain,
+.ticketStub {
+  --n: 15px;
+}
+
+.ticketMain {
+  border-radius: 28px 28px 0 0;
+  -webkit-mask:
+    radial-gradient(circle var(--n) at 0 100%, #0000 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--n) at 100% 100%, #0000 97%, #000) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle var(--n) at 0 100%, #0000 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--n) at 100% 100%, #0000 97%, #000) right / 51% 100% no-repeat;
+}
+
+.ticketStub {
+  border-radius: 0 0 28px 28px;
+  border-top: 2px dashed rgba(255, 255, 255, 0.75);
+  -webkit-mask:
+    radial-gradient(circle var(--n) at 0 0, #0000 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--n) at 100% 0, #0000 97%, #000) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle var(--n) at 0 0, #0000 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--n) at 100% 0, #0000 97%, #000) right / 51% 100% no-repeat;
+}
+
+@media (min-width: 640px) {
+  .ticketMain {
+    border-radius: 28px 0 0 28px;
+    -webkit-mask:
+      radial-gradient(circle var(--n) at 100% 0, #0000 97%, #000) top / 100% 51% no-repeat,
+      radial-gradient(circle var(--n) at 100% 100%, #0000 97%, #000) bottom / 100% 51% no-repeat;
+    mask:
+      radial-gradient(circle var(--n) at 100% 0, #0000 97%, #000) top / 100% 51% no-repeat,
+      radial-gradient(circle var(--n) at 100% 100%, #0000 97%, #000) bottom / 100% 51% no-repeat;
+  }
+
+  .ticketStub {
+    border-radius: 0 28px 28px 0;
+    border-top: 0;
+    border-left: 2px dashed rgba(255, 255, 255, 0.75);
+    -webkit-mask:
+      radial-gradient(circle var(--n) at 0 0, #0000 97%, #000) top / 100% 51% no-repeat,
+      radial-gradient(circle var(--n) at 0 100%, #0000 97%, #000) bottom / 100% 51% no-repeat;
+    mask:
+      radial-gradient(circle var(--n) at 0 0, #0000 97%, #000) top / 100% 51% no-repeat,
+      radial-gradient(circle var(--n) at 0 100%, #0000 97%, #000) bottom / 100% 51% no-repeat;
+  }
+}
+
+/* Paper texture for the ticket body. */
+.ticketPaper {
+  background-color: #fffaf4;
+  background-image:
+    radial-gradient(120% 90% at 0% 0%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0) 55%),
+    radial-gradient(80% 70% at 100% 100%, rgba(251, 207, 232, 0.55), rgba(251, 207, 232, 0) 60%),
+    repeating-linear-gradient(135deg, rgba(244, 63, 94, 0.035) 0 2px, transparent 2px 12px);
+}
+
+:global(.dark) .ticketPaper {
+  background-color: #1b1527;
+  background-image:
+    radial-gradient(120% 90% at 0% 0%, rgba(192, 132, 252, 0.16), rgba(192, 132, 252, 0) 55%),
+    radial-gradient(80% 70% at 100% 100%, rgba(244, 114, 182, 0.1), rgba(244, 114, 182, 0) 60%),
+    repeating-linear-gradient(135deg, rgba(196, 181, 253, 0.04) 0 2px, transparent 2px 12px);
+}
+
+/* A slow foil sheen across the ticket. */
+.sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.55) 50%, transparent 62%);
+  background-size: 260% 100%;
+  background-position: 130% 0;
+  mix-blend-mode: soft-light;
+  animation: sheen 7s ease-in-out 1.2s infinite;
+}
+
+@keyframes sheen {
+  0% {
+    background-position: 130% 0;
+  }
+  35%,
+  100% {
+    background-position: -130% 0;
+  }
+}
+
+/* Soft pulsing glow for the big YES button. */
+.yesGlow {
+  animation: yesGlow 2.2s ease-in-out infinite;
+}
+
+@keyframes yesGlow {
+  0%,
+  100% {
+    box-shadow: 0 10px 30px -8px rgba(244, 63, 94, 0.55), 0 0 0 0 rgba(244, 63, 94, 0.35);
+  }
+  50% {
+    box-shadow: 0 14px 38px -8px rgba(244, 63, 94, 0.7), 0 0 0 12px rgba(244, 63, 94, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheen,
+  .yesGlow {
+    animation: none;
+  }
+}

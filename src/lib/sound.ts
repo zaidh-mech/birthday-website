@@ -94,7 +94,7 @@ interface ToneOptions {
   attack?: number
 }
 
-function tone({ freq, at = 0, duration = 0.15, type = 'sine', gain = 0.3, slideTo, attack = 0.004 }: ToneOptions, force = false) {
+function tone({ freq, at = 0, duration = 0.15, type = 'sine', gain = 0.3, slideTo, attack = 0.004 }: ToneOptions, force = false, out?: AudioNode) {
   if (!force && !readEnabled()) return
   const ac = getContext()
   if (!ac || !master) return
@@ -108,16 +108,16 @@ function tone({ freq, at = 0, duration = 0.15, type = 'sine', gain = 0.3, slideT
   g.gain.exponentialRampToValueAtTime(gain, t0 + attack)
   g.gain.exponentialRampToValueAtTime(0.0001, t0 + duration)
   osc.connect(g)
-  g.connect(master)
+  g.connect(out ?? master)
   osc.start(t0)
   osc.stop(t0 + duration + 0.02)
 }
 
 /** Bell-ish note: fundamental plus a quiet octave harmonic with a long decay. */
-function bell(freq: number, at = 0, duration = 0.9, gain = 0.22, force = false) {
-  tone({ freq, at, duration, type: 'sine', gain, attack: 0.003 }, force)
-  tone({ freq: freq * 2, at, duration: duration * 0.6, type: 'sine', gain: gain * 0.35, attack: 0.003 }, force)
-  tone({ freq: freq * 3.01, at, duration: duration * 0.3, type: 'triangle', gain: gain * 0.08, attack: 0.002 }, force)
+function bell(freq: number, at = 0, duration = 0.9, gain = 0.22, force = false, out?: AudioNode) {
+  tone({ freq, at, duration, type: 'sine', gain, attack: 0.003 }, force, out)
+  tone({ freq: freq * 2, at, duration: duration * 0.6, type: 'sine', gain: gain * 0.35, attack: 0.003 }, force, out)
+  tone({ freq: freq * 3.01, at, duration: duration * 0.3, type: 'triangle', gain: gain * 0.08, attack: 0.002 }, force, out)
 }
 
 function noiseBurst(duration = 0.18, gain = 0.15, filterFreq = 1800) {
@@ -186,6 +186,8 @@ const HAPPY_BIRTHDAY: [number, number][] = [
 ]
 
 let melodyTimer: number | null = null
+/** All melody notes go through this bus so stopMelody() can silence notes already scheduled on the audio clock. */
+let melodyBus: GainNode | null = null
 
 /**
  * Plays "Happy Birthday" as a music box. Returns the total duration in ms.
@@ -194,12 +196,16 @@ let melodyTimer: number | null = null
 export function playHappyBirthday(onNote?: (index: number) => void, bpm = 112): number {
   stopMelody()
   const ac = getContext()
-  if (!ac) return 0
+  if (!ac || !master) return 0
+  const bus = ac.createGain()
+  bus.gain.value = 1
+  bus.connect(master)
+  melodyBus = bus
   const beat = 60 / bpm
   let t = 0.05
   const timeouts: number[] = []
   HAPPY_BIRTHDAY.forEach(([note, beats], i) => {
-    bell(midi(note + 12), t, Math.max(0.5, beats * beat * 1.4), 0.2, true)
+    bell(midi(note + 12), t, Math.max(0.5, beats * beat * 1.4), 0.2, true, bus)
     if (onNote) timeouts.push(window.setTimeout(() => onNote(i), t * 1000))
     t += beats * beat
   })
@@ -218,7 +224,24 @@ export function stopMelody(): void {
   melodyTimer = null
   activeTimeouts.forEach((t) => window.clearTimeout(t))
   activeTimeouts = []
-  // Notes already scheduled on the audio clock fade out on their own within ~1s.
+  // The whole song is scheduled up front on the audio clock, so fade its bus
+  // out quickly and detach it — otherwise it would keep playing to the end.
+  if (melodyBus) {
+    const bus = melodyBus
+    melodyBus = null
+    try {
+      if (ctx) bus.gain.setTargetAtTime(0, ctx.currentTime, 0.06)
+      window.setTimeout(() => {
+        try {
+          bus.disconnect()
+        } catch {
+          /* already disconnected */
+        }
+      }, 450)
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
 export const HAPPY_BIRTHDAY_NOTE_COUNT = HAPPY_BIRTHDAY.length

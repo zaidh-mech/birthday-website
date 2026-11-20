@@ -1,0 +1,165 @@
+/* Wheel of Love — sizes and keyframes that Tailwind utilities can't express. */
+
+.wheelBox {
+  width: min(88vw, 460px);
+  max-width: 100%;
+}
+
+/* Keep the whole wheel visible on short landscape phones. */
+@supports (height: 100svh) {
+  .wheelBox {
+    width: min(88vw, 460px, max(240px, calc(100svh - 140px)));
+  }
+}
+
+.aura {
+  background: conic-gradient(
+    from 0deg,
+    rgba(251, 113, 133, 0) 0deg,
+    rgba(251, 113, 133, 0.32) 50deg,
+    rgba(251, 113, 133, 0) 110deg,
+    rgba(196, 181, 253, 0.32) 170deg,
+    rgba(196, 181, 253, 0) 230deg,
+    rgba(252, 211, 77, 0.26) 290deg,
+    rgba(251, 113, 133, 0) 360deg
+  );
+  -webkit-mask-image: radial-gradient(closest-side, #000 52%, transparent 100%);
+  mask-image: radial-gradient(closest-side, #000 52%, transparent 100%);
+  animation: auraSpin 48s linear infinite;
+  will-change: transform;
+}
+
+@keyframes auraSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Rim bulbs: twinkle while idle, chase around the rim while spinning. */
+.bulb {
+  animation: twinkle 2.6s ease-in-out infinite;
+}
+
+.spinning .bulb {
+  animation: chase 0.75s linear infinite;
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes chase {
+  0%,
+  22% {
+    opacity: 1;
+  }
+  38%,
+  100% {
+    opacity: 0.18;
+  }
+}
+
+.hubHeart {
+  animation: beat 1.8s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.spinning .hubHeart {
+  animation-duration: 0.55s;
+}
+
+@keyframes beat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  14% {
+    transform: scale(1.18);
+  }
+  28% {
+    transform: scale(1);
+  }
+  42% {
+    transform: scale(1.1);
+  }
+  56% {
+    transform: scale(1);
+  }
+}
+
+.winner {
+  animation: winnerPulse 1.1s ease-in-out infinite;
+}
+
+@keyframes winnerPulse {
+  0%,
+  100% {
+    opacity: 0.08;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.spinGlow {
+  animation: glow 2.4s ease-in-out infinite;
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.07);
+  }
+}
+
+.sunburst {
+  background: repeating-conic-gradient(from 0deg, rgba(251, 113, 133, 0.22) 0deg 9deg, rgba(251, 113, 133, 0) 9deg 22.5deg);
+  -webkit-mask-image: radial-gradient(closest-side, #000 25%, transparent 100%);
+  mask-image: radial-gradient(closest-side, #000 25%, transparent 100%);
+  animation: auraSpin 22s linear infinite;
+}
+
+:global(.dark) .sunburst {
+  background: repeating-conic-gradient(from 0deg, rgba(196, 181, 253, 0.2) 0deg 9deg, rgba(196, 181, 253, 0) 9deg 22.5deg);
+}
+
+.floaty {
+  animation: floaty 3.2s ease-in-out infinite;
+}
+
+@keyframes floaty {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aura,
+  .bulb,
+  .spinning .bulb,
+  .hubHeart,
+  .winner,
+  .spinGlow,
+  .sunburst,
+  .floaty {
+    animation: none !important;
+  }
+  .winner {
+    opacity: 0.35;
+  }
+}

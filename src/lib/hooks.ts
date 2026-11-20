@@ -53,7 +53,10 @@ export function useInterval(callback: () => void, delay: number | null): void {
 /** useState mirrored to localStorage (JSON). Safe when storage is blocked. */
 export function useLocalStorageState<T>(key: string, initial: T): [T, (value: T | ((prev: T) => T)) => void] {
   const [value, setValue] = useState<T>(initial)
-  const loaded = useRef(false)
+  // Which key has been read back into state. Tracked as state (not a ref) so the
+  // write effect never persists the stale initial value in the same commit as the
+  // read — that used to wipe the stored value under React StrictMode's double effects.
+  const [loadedKey, setLoadedKey] = useState<string | null>(null)
 
   useEffect(() => {
     try {
@@ -62,17 +65,17 @@ export function useLocalStorageState<T>(key: string, initial: T): [T, (value: T 
     } catch {
       /* ignore */
     }
-    loaded.current = true
+    setLoadedKey(key)
   }, [key])
 
   useEffect(() => {
-    if (!loaded.current) return
+    if (loadedKey !== key) return
     try {
       window.localStorage.setItem(key, JSON.stringify(value))
     } catch {
       /* ignore */
     }
-  }, [key, value])
+  }, [key, value, loadedKey])
 
   return [value, setValue]
 }

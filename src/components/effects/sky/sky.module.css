@@ -1,0 +1,279 @@
+/*
+ * DOM layers of the background that never need per-frame drawing:
+ * gradient washes, the milky way band and the moon. Day and night layers
+ * cross-fade on the .dark class (pure CSS, so there is no flash on load).
+ * --px / --py (-1…1) are set from the canvas engine for mouse parallax.
+ */
+
+.root {
+  --px: 0;
+  --py: 0;
+  contain: strict;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  transition: opacity 1.2s ease;
+}
+
+.day {
+  opacity: 1;
+}
+.night {
+  opacity: 0;
+}
+:global(.dark) .day {
+  opacity: 0;
+}
+:global(.dark) .night {
+  opacity: 1;
+}
+
+.fill {
+  position: absolute;
+  inset: 0;
+}
+
+.parallaxFar,
+.parallaxMid {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+.parallaxFar {
+  transform: translate3d(calc(var(--px) * -8px), calc(var(--py) * -6px), 0);
+}
+.parallaxMid {
+  transform: translate3d(calc(var(--px) * -12px), calc(var(--py) * -9px), 0);
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+.canvasReady {
+  opacity: 1;
+}
+
+/* ------------------------------------------------------------- day */
+
+.dayBase {
+  background: linear-gradient(180deg, #fffaf6 0%, #fdfbf7 45%, #fdf5ee 100%);
+}
+
+.blob {
+  position: absolute;
+  border-radius: 9999px;
+  will-change: transform;
+}
+
+.blobRose {
+  width: 75vmax;
+  height: 75vmax;
+  left: -28vmax;
+  top: -30vmax;
+  background: radial-gradient(circle, rgb(255 228 230 / 0.9) 0%, rgb(255 228 230 / 0.45) 35%, rgb(255 228 230 / 0) 68%);
+  animation: driftA 28s ease-in-out infinite alternate;
+}
+
+.blobGold {
+  width: 65vmax;
+  height: 65vmax;
+  right: -24vmax;
+  bottom: -28vmax;
+  background: radial-gradient(circle, rgb(254 243 199 / 0.85) 0%, rgb(254 243 199 / 0.4) 38%, rgb(254 243 199 / 0) 68%);
+  animation: driftB 34s ease-in-out infinite alternate;
+}
+
+.blobLilac {
+  width: 48vmax;
+  height: 48vmax;
+  left: 38%;
+  top: 34%;
+  background: radial-gradient(circle, rgb(237 233 254 / 0.6) 0%, rgb(237 233 254 / 0) 66%);
+  animation: driftC 40s ease-in-out infinite alternate;
+}
+
+.blobPeach {
+  width: 42vmax;
+  height: 42vmax;
+  left: -12vmax;
+  bottom: -8vmax;
+  background: radial-gradient(circle, rgb(255 237 213 / 0.65) 0%, rgb(255 237 213 / 0) 66%);
+  animation: driftB 30s ease-in-out infinite alternate-reverse;
+}
+
+.sunGlow {
+  width: 46vmax;
+  height: 46vmax;
+  right: -14vmax;
+  top: -16vmax;
+  background: radial-gradient(circle, rgb(253 230 138 / 0.45) 0%, rgb(253 186 116 / 0.16) 36%, rgb(253 186 116 / 0) 66%);
+  animation: glow 9s ease-in-out infinite;
+}
+
+/* ------------------------------------------------------------- night */
+
+.nightBase {
+  background: radial-gradient(130% 85% at 50% -5%, #191b33 0%, #10121c 42%, #0b0c10 72%);
+}
+
+.nebulaViolet {
+  width: 70vmax;
+  height: 70vmax;
+  left: -22vmax;
+  top: -24vmax;
+  background: radial-gradient(circle, rgb(76 29 149 / 0.38) 0%, rgb(45 27 110 / 0.18) 40%, rgb(45 27 110 / 0) 68%);
+  animation: driftA 40s ease-in-out infinite alternate;
+}
+
+.nebulaBlue {
+  width: 80vmax;
+  height: 80vmax;
+  right: -26vmax;
+  bottom: -32vmax;
+  background: radial-gradient(circle, rgb(31 64 104 / 0.36) 0%, rgb(31 64 104 / 0.14) 40%, rgb(31 64 104 / 0) 68%);
+  animation: driftB 46s ease-in-out infinite alternate;
+}
+
+.nebulaRose {
+  width: 50vmax;
+  height: 50vmax;
+  left: 45%;
+  bottom: -22vmax;
+  background: radial-gradient(circle, rgb(131 24 67 / 0.16) 0%, rgb(131 24 67 / 0) 66%);
+  animation: driftC 52s ease-in-out infinite alternate;
+}
+
+/* The band of the milky way: keep the angle/centre in sync with skyEngine.ts */
+.milkyWay,
+.milkyCore {
+  position: absolute;
+  left: -30%;
+  width: 160%;
+  transform: rotate(-24deg);
+}
+
+.milkyWay {
+  top: 28%;
+  height: 42%;
+  background: radial-gradient(50% 50% at 50% 50%, rgb(167 139 250 / 0.17) 0%, rgb(124 58 237 / 0.1) 32%, rgb(76 29 149 / 0.05) 55%, rgb(76 29 149 / 0) 72%);
+}
+
+.milkyCore {
+  top: 43%;
+  height: 12%;
+  background: radial-gradient(50% 50% at 50% 50%, rgb(237 233 254 / 0.11) 0%, rgb(221 214 254 / 0.05) 45%, rgb(221 214 254 / 0) 72%);
+}
+
+.vignette {
+  background: radial-gradient(120% 100% at 50% 40%, rgb(0 0 0 / 0) 60%, rgb(0 0 0 / 0.38) 100%);
+}
+
+/* ------------------------------------------------------------- moon */
+
+.moonParallax {
+  position: absolute;
+  top: 13%;
+  right: 9%;
+  font-size: clamp(4.75rem, 13vmin, 10.5rem);
+  width: 1em;
+  height: 1em;
+  transform: translate3d(calc(var(--px) * -16px), calc(var(--py) * -11px), 0);
+  will-change: transform;
+}
+
+.moonRise {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  translate: 0 0.35em;
+  scale: 0.92;
+  transition:
+    opacity 1.4s ease,
+    translate 1.8s cubic-bezier(0.22, 1, 0.36, 1),
+    scale 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+:global(.dark) .moonRise {
+  opacity: 1;
+  translate: 0 0;
+  scale: 1;
+}
+
+.moonHalo {
+  position: absolute;
+  inset: -80%;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgb(237 233 254 / 0.24) 0%, rgb(196 181 253 / 0.11) 30%, rgb(196 181 253 / 0) 62%);
+  animation: glow 7s ease-in-out infinite;
+}
+
+.moon {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background:
+    /* soft sheen */
+    radial-gradient(circle at 30% 28%, rgb(255 255 255 / 0.6) 0%, rgb(255 255 255 / 0) 30%),
+    /* craters: dark floor + a faint bright rim */
+    radial-gradient(circle at 62% 30%, rgb(118 106 138 / 0.28) 0%, rgb(118 106 138 / 0.15) 5%, rgb(255 255 255 / 0.2) 6.5%, rgb(255 255 255 / 0) 8%),
+    radial-gradient(circle at 35% 60%, rgb(118 106 138 / 0.3) 0%, rgb(118 106 138 / 0.15) 7.5%, rgb(255 255 255 / 0.18) 9.5%, rgb(255 255 255 / 0) 11%),
+    radial-gradient(circle at 70% 66%, rgb(118 106 138 / 0.24) 0%, rgb(118 106 138 / 0.12) 4.5%, rgb(255 255 255 / 0) 6.5%),
+    radial-gradient(circle at 24% 40%, rgb(118 106 138 / 0.22) 0%, rgb(118 106 138 / 0) 5%),
+    radial-gradient(circle at 52% 83%, rgb(118 106 138 / 0.2) 0%, rgb(118 106 138 / 0) 4.5%),
+    radial-gradient(circle at 80% 44%, rgb(118 106 138 / 0.18) 0%, rgb(118 106 138 / 0) 3.5%),
+    /* maria (the darker "seas") */
+    radial-gradient(34% 26% at 44% 40%, rgb(150 140 172 / 0.22) 0%, rgb(150 140 172 / 0) 100%),
+    radial-gradient(26% 20% at 62% 56%, rgb(150 140 172 / 0.18) 0%, rgb(150 140 172 / 0) 100%),
+    /* body */
+    radial-gradient(circle at 38% 34%, #fffef9 0%, #f7f2e6 36%, #e6dfd2 66%, #c9c1b5 100%);
+  box-shadow:
+    inset -0.1em -0.09em 0.2em rgb(70 55 100 / 0.38),
+    inset 0.04em 0.035em 0.1em rgb(255 255 255 / 0.55),
+    0 0 0.18em 0.03em rgb(255 248 230 / 0.32),
+    0 0 0.55em 0.16em rgb(196 181 253 / 0.16);
+}
+
+/* ------------------------------------------------------------- motion */
+
+@keyframes driftA {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(4vmax, 3vmax, 0) scale(1.08);
+  }
+}
+
+@keyframes driftB {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(-5vmax, -3vmax, 0) scale(1.06);
+  }
+}
+
+@keyframes driftC {
+  from {
+    transform: translate3d(0, 0, 0) scale(0.95);
+  }
+  to {
+    transform: translate3d(-4vmax, 4vmax, 0) scale(1.05);
+  }
+}
+
+@keyframes glow {
+  0%,
+  100% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 1;
+  }
+}

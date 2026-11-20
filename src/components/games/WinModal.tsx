@@ -71,7 +71,7 @@ export default function WinModal({
             exit={{ scale: 0.9, y: 20, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 260, damping: 22 }}
             onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-sm overflow-hidden rounded-[2rem] border border-white/60 bg-[#fffaf6] p-6 text-center shadow-2xl sm:p-8 dark:border-white/10 dark:bg-[#14151d]"
+            className="relative max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto overscroll-contain rounded-[2rem] border border-white/60 bg-[#fffaf6] p-6 text-center shadow-2xl sm:p-8 dark:border-white/10 dark:bg-[#14151d]"
           >
             <div className="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-rose-400 via-pink-400 to-purple-400" />
             {onClose && (

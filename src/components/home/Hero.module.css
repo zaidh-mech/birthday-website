@@ -1,0 +1,142 @@
+/* Rose-gold shimmer for "my everything." (moonlit lavender in dark mode). */
+.shimmer {
+  background-image: linear-gradient(
+    100deg,
+    #f43f5e 0%,
+    #fb7185 14%,
+    #f7b89c 28%,
+    #e7a07b 36%,
+    #fda4af 50%,
+    #e11d48 64%,
+    #fb7185 80%,
+    #f43f5e 100%
+  );
+  background-size: 200% 100%;
+  background-repeat: repeat-x;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  animation: shimmer 8s linear infinite;
+}
+
+:global(.dark) .shimmer {
+  background-image: linear-gradient(
+    100deg,
+    #c084fc 0%,
+    #e9d5ff 16%,
+    #f5c6a5 30%,
+    #f0abfc 46%,
+    #a855f7 62%,
+    #d8b4fe 80%,
+    #c084fc 100%
+  );
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: -200% 50%;
+  }
+}
+
+/* Slowly turning aurora glow behind the hero card. */
+.aurora {
+  background: conic-gradient(
+    from 90deg,
+    rgba(251, 113, 133, 0.55),
+    rgba(253, 186, 116, 0.4),
+    rgba(244, 114, 182, 0.5),
+    rgba(192, 132, 252, 0.42),
+    rgba(251, 113, 133, 0.55)
+  );
+  filter: blur(56px);
+  animation: spin 24s linear infinite;
+  will-change: transform;
+}
+
+:global(.dark) .aurora {
+  background: conic-gradient(
+    from 90deg,
+    rgba(168, 85, 247, 0.5),
+    rgba(236, 72, 153, 0.32),
+    rgba(99, 102, 241, 0.42),
+    rgba(192, 132, 252, 0.35),
+    rgba(168, 85, 247, 0.5)
+  );
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Scroll cue wheel. */
+.cue {
+  animation: cue 2.2s ease-in-out infinite;
+}
+
+@keyframes cue {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translateY(7px);
+    opacity: 1;
+  }
+}
+
+/* Tap ripple on the headline (touch). */
+.ripple {
+  animation: ripple 0.7s ease-out forwards;
+}
+
+@keyframes ripple {
+  from {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.6;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+
+/* Gentle heartbeat for small hearts. */
+.heartbeat {
+  animation: heartbeat 1.6s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes heartbeat {
+  0%,
+  40%,
+  100% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.18);
+  }
+  28% {
+    transform: scale(1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer,
+  .aurora,
+  .cue,
+  .heartbeat {
+    animation: none;
+  }
+  .ripple {
+    animation-duration: 0.01ms;
+  }
+}
