@@ -105,6 +105,7 @@ export default function AddPlaceModal({ onClose, onCreate }: { onClose: () => vo
   const [saving, setSaving] = useState(false)
   const [notice, setNotice] = useState<Notice>(null)
   const closeRef = useRef(onClose)
+  const savingRef = useRef(false)
   const dialogRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -112,8 +113,13 @@ export default function AddPlaceModal({ onClose, onCreate }: { onClose: () => vo
   }, [onClose])
 
   useEffect(() => {
+    savingRef.current = saving
+  }, [saving])
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeRef.current()
+      // Like the backdrop and the close button: stay open while saving, so a failure can still be shown.
+      if (e.key === 'Escape' && !savingRef.current) closeRef.current()
     }
     window.addEventListener('keydown', onKey)
     const previous = document.body.style.overflow

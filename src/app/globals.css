@@ -239,14 +239,19 @@
 
 @layer base {
   html {
-    /* clip (not hidden) so the page never scrolls sideways but sticky still works */
-    overflow-x: clip;
+    /*
+     * No overflow here: an html overflow other than visible stops body's
+     * overflow from reaching the viewport, so the modals' scroll lock
+     * (body.style.overflow = 'hidden') would stop working. body's clip below
+     * is what keeps the page from scrolling sideways (#main-content clips too).
+     */
     scrollbar-gutter: stable;
     scrollbar-color: var(--scrollbar-thumb) transparent;
     -webkit-tap-highlight-color: transparent;
   }
 
   body {
+    /* clip (not hidden) so sticky still works; propagates to the viewport */
     overflow-x: clip;
     background-color: var(--background);
     color: var(--foreground);

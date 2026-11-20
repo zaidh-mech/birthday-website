@@ -17,10 +17,11 @@ import {
   Dices,
   X,
 } from 'lucide-react'
-import { fetchSiteConfig, saveSiteConfig, timeSince, daysUntilNext, whatsappLink } from '@/lib/siteConfig'
+import { fetchSiteConfigForEditing, saveSiteConfig, timeSince, daysUntilNext, whatsappLink } from '@/lib/siteConfig'
 import { DEFAULT_SITE_CONFIG, type Coupon, type SiteConfig, type WheelPrize } from '@/data/love'
 import { GAMES } from '@/data/games'
-import { PageHeader, errorMessage, ui } from '../_components/ui'
+import { MAX_SEGMENTS as MAX_WHEEL_PRIZES } from '@/app/games/love-wheel/wheelMath'
+import { Banner, PageHeader, errorMessage, ui } from '../_components/ui'
 import ListEditor from './ListEditor'
 import Section from './Section'
 import { configToForm, digitsOnly, formToConfig, newId, parseSecretWords, splitComma, splitLines, validateForm, type SiteForm } from './form'
@@ -108,13 +109,16 @@ export default function SiteSettingsPage() {
   const [savedConfig, setSavedConfig] = useState<SiteConfig>(DEFAULT_SITE_CONFIG)
   const [saveState, setSaveState] = useState<SaveState>({ kind: 'idle' })
   const [showProblems, setShowProblems] = useState(false)
+  // The cloud couldn't be read: the form shows a fallback copy, and saving it would overwrite the real settings.
+  const [cloudUnreadable, setCloudUnreadable] = useState(false)
 
   useEffect(() => {
     let cancelled = false
-    fetchSiteConfig(true).then((config) => {
+    fetchSiteConfigForEditing().then(({ config, cloudUnreadable: unreadable }) => {
       if (cancelled) return
       setSavedConfig(config)
       setForm(configToForm(config))
+      setCloudUnreadable(unreadable)
       setLoaded(true)
     })
     return () => {
@@ -161,6 +165,10 @@ export default function SiteSettingsPage() {
   const isDefault = (...keys: (keyof SiteForm)[]) => keys.every((k) => JSON.stringify(form[k]) === JSON.stringify(DEFAULT_FORM[k]))
 
   const handleSave = async () => {
+    if (cloudUnreadable) {
+      setSaveState({ kind: 'error', message: "Your saved settings couldn't be loaded from the cloud, so saving now could replace them. Reload the page and try again." })
+      return
+    }
     setShowProblems(true)
     if (hasProblems) {
       setSaveState({ kind: 'error', message: 'Please fix the highlighted fields first.' })
@@ -209,6 +217,15 @@ export default function SiteSettingsPage() {
         title="Site & Games"
         subtitle="Names, special dates and all the little words the site and the games use. Changes go live for her as soon as you save."
       />
+
+      {cloudUnreadable && (
+        <Banner
+          notice={{
+            tone: 'error',
+            text: "Couldn't load your saved settings from the cloud, so this shows the copy on this device (or the defaults). Saving is paused so it can't overwrite them: reload the page to try again.",
+          }}
+        />
+      )}
 
       {/* Section shortcuts (scrolls inside itself on small phones) */}
       <nav aria-label="Sections" className="-mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -319,7 +336,7 @@ export default function SiteSettingsPage() {
                 <span className="text-rose-700">
                   Together for {together.years} year{together.years === 1 ? '' : 's'}, {together.months} month{together.months === 1 ? '' : 's'} and {together.days} day
                   {together.days === 1 ? '' : 's'} ({together.totalDays.toLocaleString()} days).
-                  {nextAnniversaryYears !== null && daysToAnniversary !== null && (
+                  {nextAnniversaryYears !== null && nextAnniversaryYears > 0 && daysToAnniversary !== null && (
                     <>
                       {' '}
                       {daysToAnniversary === 0 ? `Today is your ${nextAnniversaryYears}-year anniversary!` : `Year ${nextAnniversaryYears} in ${daysToAnniversary} day${daysToAnniversary === 1 ? '' : 's'}.`}
@@ -410,6 +427,7 @@ export default function SiteSettingsPage() {
           items={form.wheelPrizes}
           onChange={(items) => set('wheelPrizes', items)}
           itemName="prize"
+          max={MAX_WHEEL_PRIZES}
           makeNew={() => ({ id: newId('prize'), emoji: '🎁', label: '', detail: '' })}
           fields={[
             { key: 'emoji', label: 'Emoji', kind: 'emoji' },
@@ -418,6 +436,11 @@ export default function SiteSettingsPage() {
           ]}
         />
         {validPrizes < 2 && <p className="mt-2 text-xs text-amber-700">The wheel needs at least 2 prizes with a label, otherwise the default prizes are used.</p>}
+        {validPrizes > MAX_WHEEL_PRIZES && (
+          <p className="mt-2 text-xs text-amber-700">
+            The wheel fits {MAX_WHEEL_PRIZES} prizes: only the first {MAX_WHEEL_PRIZES} will appear. Remove {validPrizes - MAX_WHEEL_PRIZES} to choose which.
+          </p>
+        )}
       </Section>
 
       <Section
@@ -507,8 +530,8 @@ export default function SiteSettingsPage() {
         {!form.whatsappNumber.trim() && <p className={`${ui.hint} mt-1`}>Empty: the built-in number will be used.</p>}
       </Section>
 
-      {/* Sticky save bar (kept above the floating theme/sound buttons on phones) */}
-      <div className="sticky bottom-20 md:bottom-4 z-30">
+      {/* Sticky save bar (the floating theme/sound buttons are not shown in the admin) */}
+      <div className="sticky bottom-4 z-30">
         <div
           className={`flex flex-col min-[480px]:flex-row min-[480px]:items-center gap-3 rounded-2xl border px-4 py-3 shadow-lg backdrop-blur-md transition-colors ${
             saveState.kind === 'error' ? 'bg-red-50/95 border-red-200' : dirty ? 'bg-white/95 border-rose-200' : 'bg-white/90 border-gray-200'

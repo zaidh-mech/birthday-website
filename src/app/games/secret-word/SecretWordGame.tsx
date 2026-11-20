@@ -88,14 +88,7 @@ function preload(src: string) {
   }
 }
 
-/** Is a keyboard user deliberately on this control (rather than it just having been clicked)? */
-function isFocusVisible(el: Element): boolean {
-  try {
-    return el.matches(':focus-visible')
-  } catch {
-    return true
-  }
-}
+const CONTROL_SELECTOR = 'button, a[href], [role="button"], summary'
 
 const GAME_INFO = getGame(GAME_ID)
 
@@ -107,12 +100,14 @@ export default function SecretWordGame() {
 
   const rootRef = useRef<HTMLDivElement>(null)
   const anchorRef = useRef<HTMLDivElement>(null)
-  const layout = useBoardLayout(rootRef, anchorRef, { reducedMotion: reduce })
-
   const [ready, setReady] = useState(false)
   const [configReady, setConfigReady] = useState(loaded)
   const [today, setToday] = useState('')
   const [mode, setMode] = useState<Mode>('daily')
+
+  // Practice mode adds a "New word" button to the header, which can wrap it onto
+  // a second line on narrow phones: measure (and re-pin the glide) per mode.
+  const layout = useBoardLayout(rootRef, anchorRef, { reducedMotion: reduce, relayoutKey: mode })
   const [games, setGames] = useState<Games>({ daily: null, practice: null })
   const [stats, setStats] = useState<Stats>(EMPTY_STATS)
   const [revealing, setRevealing] = useState<{ mode: Mode; row: number } | null>(null)
@@ -129,6 +124,10 @@ export default function SecretWordGame() {
   const toastTimer = useRef<number | null>(null)
   const pressTimer = useRef<number | null>(null)
   const toastId = useRef(0)
+  // The control the pointer last pressed. A clicked button keeps focus, and Chrome
+  // makes it match :focus-visible as soon as any key is pressed, so focus-visible
+  // can't tell "clicked it" from "tabbed to it".
+  const pointerControl = useRef<Element | null>(null)
 
   const later = (fn: () => void, ms: number) => {
     timers.current.push(window.setTimeout(fn, ms))
@@ -349,6 +348,7 @@ export default function SecretWordGame() {
   }
 
   const onKeyDown = useEffectEvent((e: KeyboardEvent) => {
+    if (e.key === 'Tab') pointerControl.current = null
     if (e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return
     if (resultOpen || statsOpen) return
     const target = e.target instanceof HTMLElement ? e.target : null
@@ -360,9 +360,9 @@ export default function SecretWordGame() {
     const key = e.key
 
     if (key === 'Enter') {
-      const control = target && target !== document.body ? target.closest<HTMLElement>('button, a[href], [role="button"], summary') : null
+      const control = target && target !== document.body ? target.closest<HTMLElement>(CONTROL_SELECTOR) : null
       // A keyboard user tabbed onto a button: let Enter press that button.
-      if (control && isFocusVisible(control)) return
+      if (control && control !== pointerControl.current) return
       if (!accepting) return
       e.preventDefault()
       // A mouse-clicked button still has focus: drop it so Enter is the guess.
@@ -388,8 +388,15 @@ export default function SecretWordGame() {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => onKeyDown(e)
+    const onPointerDown = (e: PointerEvent) => {
+      pointerControl.current = e.target instanceof Element ? e.target.closest(CONTROL_SELECTOR) : null
+    }
     window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
+    window.addEventListener('pointerdown', onPointerDown, true)
+    return () => {
+      window.removeEventListener('keydown', handler)
+      window.removeEventListener('pointerdown', onPointerDown, true)
+    }
   }, [])
 
   /* ---------------- actions ---------------- */

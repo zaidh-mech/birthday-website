@@ -40,9 +40,16 @@ export default function SafeConfigPage() {
     }
   }, [])
 
-  const blanks = useMemo(() => Array.from(text.matchAll(BLANK_PATTERN)).map((m) => ({ hint: m[1].trim(), answer: m[2].trim() })), [text])
+  // Like the Memories page: a blank whose answer is only spaces is shown as plain text, not a box.
+  const blanks = useMemo(
+    () =>
+      Array.from(text.matchAll(BLANK_PATTERN))
+        .map((m) => ({ hint: m[1].trim(), answer: m[2].trim() }))
+        .filter((b) => b.answer),
+    [text],
+  )
   const brokenBrackets = useMemo(() => {
-    const withoutBlanks = text.replace(BLANK_PATTERN, '')
+    const withoutBlanks = text.replace(BLANK_PATTERN, (match, _hint: string, answer: string) => (answer.trim() ? '' : match))
     return /\[[^\]]*\]/.test(withoutBlanks)
   }, [text])
   const dirty = text !== savedText

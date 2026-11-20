@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { motion, AnimatePresence, animate, useMotionValue, useReducedMotion } from 'framer-motion'
 import { Check, Lightbulb, LockOpen, Sparkles, KeyRound } from 'lucide-react'
 import { sfx, haptic } from '@/lib/sound'
@@ -87,6 +87,19 @@ export default function VaultGate({ parts, onUnlocked }: VaultGateProps) {
     if (status[blank.id] === 'wrong') setStatus((prev) => ({ ...prev, [blank.id]: 'idle' }))
     if (message?.tone === 'error') setMessage(null)
     nudgeDial(value)
+  }
+
+  /**
+   * Enter (the keyboard's "next" key on phones) moves on to the next empty blank
+   * instead of submitting half a letter; only when none is left does it submit.
+   */
+  function handleBlankKeyDown(blank: BlankPart, e: ReactKeyboardEvent<HTMLInputElement>) {
+    if (e.key !== 'Enter' || e.nativeEvent.isComposing) return
+    const open = (b: BlankPart) => b.id !== blank.id && status[b.id] !== 'correct' && !(answers[b.id] ?? '').trim()
+    const next = blanks.find((b) => b.index > blank.index && open(b)) ?? blanks.find(open)
+    if (!next) return
+    e.preventDefault()
+    inputRefs.current[next.id]?.focus()
   }
 
   function shake(ids: string[]) {
@@ -344,6 +357,7 @@ export default function VaultGate({ parts, onUnlocked }: VaultGateProps) {
                           hint={hints[part.id] ?? 0}
                           disabled={busy}
                           onChange={(v) => handleChange(part, v)}
+                          onKeyDown={(e) => handleBlankKeyDown(part, e)}
                           inputRef={(el) => {
                             inputRefs.current[part.id] = el
                           }}
@@ -435,11 +449,12 @@ interface BlankFieldProps {
   disabled: boolean
   isLast: boolean
   onChange: (value: string) => void
+  onKeyDown: (e: ReactKeyboardEvent<HTMLInputElement>) => void
   inputRef: (el: HTMLInputElement | null) => void
   wrapRef: (el: HTMLSpanElement | null) => void
 }
 
-function BlankField({ blank, value, status, hint, disabled, isLast, onChange, inputRef, wrapRef }: BlankFieldProps) {
+function BlankField({ blank, value, status, hint, disabled, isLast, onChange, onKeyDown, inputRef, wrapRef }: BlankFieldProps) {
   const placeholder = hint > 0 ? `${blank.answer.slice(0, hint)}…` : blank.placeholder
   const width = Math.min(Math.max(placeholder.length, value.length, 4) + 2, 22)
   const correct = status === 'correct'
@@ -458,6 +473,7 @@ function BlankField({ blank, value, status, hint, disabled, isLast, onChange, in
         readOnly={correct}
         disabled={disabled && !correct}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={onKeyDown}
         autoComplete="off"
         autoCapitalize="none"
         autoCorrect="off"

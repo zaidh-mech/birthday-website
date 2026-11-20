@@ -80,8 +80,11 @@ export class MagicEngine {
   }
 
   resize(): void {
-    const w = window.innerWidth
-    const h = window.innerHeight
+    // Measure the canvas itself: innerWidth includes the reserved scrollbar
+    // gutter, which would stretch the bitmap and draw left of the pointer.
+    const rect = this.canvas.getBoundingClientRect()
+    const w = Math.round(rect.width) || window.innerWidth
+    const h = Math.round(rect.height) || window.innerHeight
     const dpr = capDpr(2)
     if (w === this.width && h === this.height && dpr === this.dpr) return
     this.width = w

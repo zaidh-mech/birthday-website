@@ -102,14 +102,19 @@ export default function HeroPolaroids({ constraintsRef, parallaxX, parallaxY, pa
     () => {
       if (!photos || document.hidden) return
       if (Date.now() - lastInteraction.current < IDLE_BEFORE_CYCLE_MS) return
-      const shown = new Set(slots.map((s) => s.photo).filter((p): p is number => p !== null))
+      // Only photos she can see count as shown: the ones parked in the slots phones hide must still rotate in.
+      const shown = new Set(visibleSlots.map((s) => slots[s]?.photo).filter((p): p is number => p != null))
       const pool = shuffle(photos.map((_, i) => i).filter((i) => !shown.has(i)))
       if (pool.length === 0) return
       const targets = shuffle(visibleSlots.filter((s) => slotKey(s) !== hoverKey)).slice(0, Math.min(2, pool.length))
       const nextGen = Math.max(0, ...slots.map((s) => s.gen)) + 1
-      const next = slots.map((s, i) => {
-        const t = targets.indexOf(i)
-        return t === -1 ? s : { photo: pool[t], gen: nextGen }
+      const next = slots.slice()
+      targets.forEach((slot, t) => {
+        const incoming = pool[t]
+        // A photo taken from a hidden slot swaps places with the one it replaces, so no photo sits in two slots.
+        const parked = next.findIndex((s, i) => !visibleSlots.includes(i) && s.photo === incoming)
+        if (parked !== -1) next[parked] = { photo: next[slot].photo, gen: nextGen }
+        next[slot] = { photo: incoming, gen: nextGen }
       })
       setSlots(next)
       const keys = new Set(next.map((s, i) => keyFor(i, s)).filter(Boolean))

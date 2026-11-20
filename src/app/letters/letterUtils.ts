@@ -85,12 +85,14 @@ export function saveReadIds(ids: Iterable<string>): void {
 
 /* ---------------- modal helpers ---------------- */
 
-/** Locks page scroll while a dialog is open (and keeps the layout from jumping when the scrollbar disappears). */
+/**
+ * Locks page scroll while a dialog is open. html has `scrollbar-gutter: stable`,
+ * so the scrollbar's space stays reserved and no padding compensation is needed.
+ */
 export function useBodyScrollLock(active: boolean): void {
   useEffect(() => {
     if (!active) return
     const { body, documentElement: html } = document
-    const scrollbar = window.innerWidth - html.clientWidth
     const prev = {
       bodyOverflow: body.style.overflow,
       bodyPadding: body.style.paddingRight,
@@ -98,7 +100,6 @@ export function useBodyScrollLock(active: boolean): void {
     }
     body.style.overflow = 'hidden'
     html.style.overflow = 'hidden'
-    if (scrollbar > 0) body.style.paddingRight = `${scrollbar}px`
     return () => {
       body.style.overflow = prev.bodyOverflow
       body.style.paddingRight = prev.bodyPadding

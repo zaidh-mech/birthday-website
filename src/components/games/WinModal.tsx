@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Trophy, RotateCcw, X } from 'lucide-react'
@@ -39,11 +39,32 @@ export default function WinModal({
   children,
   quiet = false,
 }: WinModalProps) {
+  // Celebrate at most once per opening: StrictMode re-runs effects on mount, and
+  // `quiet` can flip while the dialog stays open.
+  const celebrated = useRef(false)
   useEffect(() => {
-    if (!open || quiet) return
+    if (!open) {
+      celebrated.current = false
+      return
+    }
+    if (quiet || celebrated.current) return
+    celebrated.current = true
     sfx.win()
     celebrate()
   }, [open, quiet])
+
+  // Move focus into the dialog while it's open and hand it back afterwards,
+  // so keyboard and screen-reader users land on the result, not the board behind.
+  const cardRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const timer = window.setTimeout(() => cardRef.current?.focus({ preventScroll: true }), 60)
+    return () => {
+      window.clearTimeout(timer)
+      if (previous && document.contains(previous)) previous.focus({ preventScroll: true })
+    }
+  }, [open])
 
   useEffect(() => {
     if (!open || !onClose) return
@@ -71,7 +92,9 @@ export default function WinModal({
             exit={{ scale: 0.9, y: 20, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 260, damping: 22 }}
             onClick={(e) => e.stopPropagation()}
-            className="relative max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto overscroll-contain rounded-[2rem] border border-white/60 bg-[#fffaf6] p-6 text-center shadow-2xl sm:p-8 dark:border-white/10 dark:bg-[#14151d]"
+            ref={cardRef}
+            tabIndex={-1}
+            className="relative max-h-[calc(100dvh-2rem)] outline-none w-full max-w-sm overflow-y-auto overscroll-contain rounded-[2rem] border border-white/60 bg-[#fffaf6] p-6 text-center shadow-2xl sm:p-8 dark:border-white/10 dark:bg-[#14151d]"
           >
             <div className="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-rose-400 via-pink-400 to-purple-400" />
             {onClose && (

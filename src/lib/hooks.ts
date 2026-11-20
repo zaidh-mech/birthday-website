@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 
 /** true after the first client render — use to avoid hydration mismatches for browser-only values. */
 export function useMounted(): boolean {
@@ -84,7 +84,9 @@ export function useLocalStorageState<T>(key: string, initial: T): [T, (value: T 
 export function useStopwatch(running: boolean): [number, () => void] {
   const [seconds, setSeconds] = useState(0)
   useInterval(() => setSeconds((s) => s + 1), running ? 1000 : null)
-  return [seconds, () => setSeconds(0)]
+  // Stable identity so callers can list it in effect/callback deps.
+  const reset = useCallback(() => setSeconds(0), [])
+  return [seconds, reset]
 }
 
 export function formatClock(totalSeconds: number): string {

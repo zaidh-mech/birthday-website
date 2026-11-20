@@ -23,7 +23,9 @@ function read(): Store {
   if (typeof window === 'undefined') return {}
   try {
     const raw = window.localStorage.getItem(KEY)
-    return raw ? (JSON.parse(raw) as Store) : {}
+    const parsed: unknown = raw ? JSON.parse(raw) : null
+    // "null", an array or a number would crash `read()[game]` or silently drop writes.
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Store) : {}
   } catch {
     return {}
   }

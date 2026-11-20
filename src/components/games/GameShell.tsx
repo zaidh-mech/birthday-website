@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, type ReactNode } from 'react'
+import { useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, RotateCcw, Volume2, VolumeX, CircleHelp } from 'lucide-react'
 import { useSoundEnabled, sfx } from '@/lib/sound'
@@ -18,7 +18,8 @@ interface GameShellProps {
   tagline?: string
   emoji?: string
   stats?: GameStat[]
-  onRestart?: () => void
+  /** Receives the click event (detail === 0 means it was pressed with the keyboard) */
+  onRestart?: (e: ReactMouseEvent<HTMLButtonElement>) => void
   restartLabel?: string
   /** "How to play" content, shown in a collapsible panel */
   help?: ReactNode
@@ -27,6 +28,15 @@ interface GameShellProps {
   /** Use the full 6xl width instead of 4xl */
   wide?: boolean
   children: ReactNode
+}
+
+/**
+ * A mouse/touch click leaves focus on the button, so a later physical Space or
+ * Enter (meant for the game) would press it again. Keyboard presses (detail 0)
+ * keep their focus.
+ */
+function blurIfPointer(e: ReactMouseEvent<HTMLButtonElement>) {
+  if (e.detail > 0) e.currentTarget.blur()
 }
 
 /**
@@ -53,20 +63,23 @@ export default function GameShell({
   const [showHelp, setShowHelp] = useState(false)
 
   return (
-    <main className={`flex-1 w-full mx-auto px-4 sm:px-6 pt-24 sm:pt-28 pb-28 md:pb-16 ${wide ? 'max-w-6xl' : 'max-w-4xl'}`}>
-      <div className="flex items-center justify-between gap-3 mb-5">
+    <main className={`flex-1 w-full mx-auto px-4 sm:px-6 pt-24 sm:pt-28 md:pt-32 pb-28 md:pb-16 ${wide ? 'max-w-6xl' : 'max-w-4xl'}`}>
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-5">
         <Link
           href="/games"
-          className="inline-flex items-center gap-1.5 rounded-full border border-rose-100 bg-white/70 px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-rose-500 shadow-sm backdrop-blur-md transition hover:-translate-x-0.5 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-purple-200 dark:hover:bg-white/10"
+          className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-rose-100 bg-white/70 px-3.5 py-2 text-xs font-semibold uppercase tracking-wider text-rose-500 shadow-sm backdrop-blur-md transition hover:-translate-x-0.5 hover:bg-white dark:border-white/10 dark:bg-white/5 dark:text-purple-200 dark:hover:bg-white/10"
         >
           <ArrowLeft className="h-3.5 w-3.5" /> All games
         </Link>
 
-        <div className="flex items-center gap-1.5">
+        <div className="ml-auto flex items-center gap-1.5">
           {help && (
             <button
               type="button"
-              onClick={() => setShowHelp((v) => !v)}
+              onClick={(e) => {
+                blurIfPointer(e)
+                setShowHelp((v) => !v)
+              }}
               aria-expanded={showHelp}
               aria-label="How to play"
               className={`rounded-full p-2.5 shadow-sm backdrop-blur-md transition ${
@@ -80,7 +93,8 @@ export default function GameShell({
           )}
           <button
             type="button"
-            onClick={() => {
+            onClick={(e) => {
+              blurIfPointer(e)
               const next = !soundOn
               setSoundOn(next)
               if (next) sfx.chime()
@@ -93,8 +107,11 @@ export default function GameShell({
           {onRestart && (
             <button
               type="button"
-              onClick={onRestart}
-              className="inline-flex items-center gap-1.5 rounded-full bg-gray-900 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-black active:scale-95 dark:bg-white/15 dark:hover:bg-white/25"
+              onClick={(e) => {
+                blurIfPointer(e)
+                onRestart(e)
+              }}
+              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-gray-900 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-black active:scale-95 dark:bg-white/15 dark:hover:bg-white/25"
             >
               <RotateCcw className="h-3.5 w-3.5" /> {restartLabel}
             </button>

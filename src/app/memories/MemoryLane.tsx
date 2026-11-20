@@ -17,7 +17,9 @@ interface MemoryLaneProps {
 
 /** Every local photo + the video, as a scroll-drawn timeline grouped by year. */
 export default function MemoryLane({ items, onOpen }: MemoryLaneProps) {
-  const { favourites, count: favCount } = useFavourites()
+  const { favourites } = useFavourites()
+  // Only hearts on lane items count here: album hearts ("album:…") and stale ids never show up in this filter.
+  const favCount = useMemo(() => items.reduce((n, i) => n + (favourites.has(i.id) ? 1 : 0), 0), [items, favourites])
   const [favOnly, setFavOnly] = useState(false)
   const canHover = useCanHover()
   const reduceMotion = useReducedMotion() ?? false

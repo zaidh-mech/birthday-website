@@ -91,10 +91,21 @@ export function computeLayout(root: HTMLElement, anchor: HTMLElement | null): Bo
 export function useBoardLayout(
   rootRef: RefObject<HTMLElement | null>,
   anchorRef: RefObject<HTMLElement | null>,
-  { autoScroll = true, reducedMotion = false }: { autoScroll?: boolean; reducedMotion?: boolean } = {},
+  {
+    autoScroll = true,
+    reducedMotion = false,
+    relayoutKey,
+  }: {
+    autoScroll?: boolean
+    reducedMotion?: boolean
+    /** Change it when something above the board may change height (e.g. the mode, which adds a header button). */
+    relayoutKey?: string
+  } = {},
 ): BoardLayout | null {
   const [layout, setLayout] = useState<BoardLayout | null>(null)
   const scrolledFor = useRef<string | null>(null)
+  // Where the automatic glide put the page (null until it has happened).
+  const autoScrolledTo = useRef<number | null>(null)
   const lastSize = useRef<{ w: number; h: number } | null>(null)
   // Read at scroll time; kept out of the effect deps so its post-hydration
   // flip doesn't cancel the pending scroll.
@@ -140,8 +151,21 @@ export function useBoardLayout(
           // Don't fight her if she has already scrolled somewhere herself.
           if (window.scrollY < 40 || orientation === 'landscape') {
             window.scrollTo({ top: scrollTo, behavior: reducedRef.current ? 'auto' : 'smooth' })
+            autoScrolledTo.current = scrollTo
           }
         }, 350)
+      } else if (
+        autoScroll &&
+        scrollTo !== null &&
+        autoScrolledTo.current !== null &&
+        scrollTo !== autoScrolledTo.current &&
+        Math.abs(window.scrollY - autoScrolledTo.current) < 2
+      ) {
+        // Something above the game changed height after the glide (and she hasn't
+        // scrolled since): keep the game where it was instead of sliding it under
+        // the floating controls.
+        window.scrollTo({ top: scrollTo, behavior: 'auto' })
+        autoScrolledTo.current = scrollTo
       }
     }
 
@@ -166,7 +190,7 @@ export function useBoardLayout(
       window.removeEventListener('resize', onResize)
       window.removeEventListener('orientationchange', onOrientation)
     }
-  }, [autoScroll])
+  }, [autoScroll, relayoutKey])
 
   return layout
 }

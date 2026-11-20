@@ -72,6 +72,8 @@ export default function MemoriesContainer() {
     if (remembered) setPhase('open')
 
     ;(async () => {
+      // Start both cloud reads together so a slow connection only costs one wait.
+      const lettersPromise = remembered ? null : loadLetterParts()
       let override = false
       try {
         override = await fetchSafeUnlockedOverride()
@@ -84,7 +86,7 @@ export default function MemoriesContainer() {
         setPhase('open')
         return
       }
-      const letterParts = await loadLetterParts()
+      const letterParts = await (lettersPromise ?? loadLetterParts())
       if (cancelled) return
       setParts(letterParts)
       setPhase('locked')

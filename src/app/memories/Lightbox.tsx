@@ -17,7 +17,8 @@ interface LightboxProps {
   onClose: () => void
 }
 
-const FOCUSABLE = 'a[href], button:not([disabled]), video[controls], [tabindex]:not([tabindex="-1"])'
+// The invisible backdrop <button tabIndex={-1}> must not count, or Tab would wrap onto it.
+const FOCUSABLE = 'a[href], button:not([disabled]):not([tabindex="-1"]), video[controls], [tabindex]:not([tabindex="-1"])'
 
 /** Full-screen photo viewer shared by Memory Lane, the album and the hero. */
 export default function Lightbox({ items, index, onIndexChange, onClose }: LightboxProps) {
@@ -101,7 +102,11 @@ export default function Lightbox({ items, index, onIndexChange, onClose }: Light
         if (nodes.length === 0) return
         const first = nodes[0]
         const last = nodes[nodes.length - 1]
-        if (e.shiftKey && document.activeElement === first) {
+        if (!dialogRef.current.contains(document.activeElement)) {
+          // Focus fell out (e.g. the focused slide was swapped out): bring it back inside.
+          e.preventDefault()
+          ;(e.shiftKey ? last : first).focus()
+        } else if (e.shiftKey && document.activeElement === first) {
           e.preventDefault()
           last.focus()
         } else if (!e.shiftKey && document.activeElement === last) {

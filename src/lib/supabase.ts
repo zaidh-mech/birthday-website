@@ -89,7 +89,9 @@ const fetchWithTimeout: typeof fetch = (input, init) => {
     if (outer.aborted) controller.abort(outer.reason)
     else outer.addEventListener('abort', () => controller.abort(outer.reason), { once: true })
   }
-  const timer = setTimeout(() => controller.abort(new DOMException('The cloud took too long to answer.', 'TimeoutError')), ms)
+  // Named "AbortError" on purpose: postgrest-js retries a read that fails with any other
+  // error up to 3 times, which would turn this 15 s limit into more than a minute.
+  const timer = setTimeout(() => controller.abort(new DOMException('The cloud took too long to answer.', 'AbortError')), ms)
   return fetch(input, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer))
 }
 
@@ -109,6 +111,9 @@ export function getSupabaseClient(): SupabaseClient | null {
     const client = createClient(url, key, {
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
       global: { fetch: fetchWithTimeout },
+      // postgrest-js retries failed reads 3 times (1 s + 2 s + 4 s). When the project is
+      // unreachable that makes every page wait ~7 s before falling back to the device copy.
+      db: { retry: false },
     })
     clients.set(cacheKey, client)
     return client
@@ -269,7 +274,9 @@ export async function checkCloudConnection(): Promise<{ ok: boolean; checks: Rec
   await Promise.all(
     tables.map(async (table) => {
       try {
-        const { error } = await supabase.from(table).select('*', { count: 'exact', head: true })
+        // A tiny GET, not a HEAD request: postgrest-js turns a 404 with an empty
+        // body (all a HEAD for a missing table gets back) into "success".
+        const { error } = await supabase.from(table).select('id').limit(1)
         checks[table] = error ? cloudError('read', error).message.replace(/^Couldn't read: /, '') : null
       } catch (e) {
         checks[table] = cloudError('read', e).message.replace(/^Couldn't read: /, '')

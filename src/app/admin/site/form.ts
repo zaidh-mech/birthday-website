@@ -72,7 +72,8 @@ function trimStrings<T extends object>(item: T): T {
 }
 
 export function formToConfig(form: SiteForm): SiteConfig {
-  const years = Number.parseInt(form.yearsTogether, 10)
+  // Same parsing as validateForm (parseInt would read "1e1" as 1 after it was validated as 10).
+  const years = form.yearsTogether.trim() ? Number(form.yearsTogether) : Number.NaN
   return {
     herName: form.herName.trim(),
     fromName: form.fromName.trim(),

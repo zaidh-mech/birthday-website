@@ -89,8 +89,9 @@ export function useMicBlow(onPuff: (strength: 1 | 2) => void) {
     }
 
     try {
-      const ctx = new AC()
+      // Hand the stream to release() first, so a failing AudioContext still turns the mic off.
       streamRef.current = stream
+      const ctx = new AC()
       ctxRef.current = ctx
       void ctx.resume().catch(() => {})
       const source = ctx.createMediaStreamSource(stream)

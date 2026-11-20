@@ -118,7 +118,8 @@ export default function LoveCouponsGame() {
 
   const resetAll = () => {
     timers.current.forEach((t) => window.clearTimeout(t))
-    timers.current = []
+    // Empty in place: the unmount cleanup holds this same array.
+    timers.current.length = 0
     commitRevealed([])
     commitRedeemed([])
     setFreshStamp(null)

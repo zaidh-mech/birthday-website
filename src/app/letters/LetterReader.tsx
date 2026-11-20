@@ -60,7 +60,7 @@ export default function LetterReader({ letters, index, origin, fromName, onClose
 
   const go = (delta: number) => {
     const next = index + delta
-    if (!isPresent || next < 0 || next >= letters.length) return
+    if (!isPresent || delta === 0 || next < 0 || next >= letters.length) return
     setDirection(delta)
     onNavigate(next)
   }
@@ -200,13 +200,13 @@ export default function LetterReader({ letters, index, origin, fromName, onClose
               onClick={() => go(-1)}
               disabled={!hasPrev}
               aria-label="Previous letter"
-              className="inline-flex h-10 items-center gap-1 rounded-full px-3 text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:pointer-events-none disabled:opacity-30 dark:text-purple-200 dark:hover:bg-white/10"
+              className="inline-flex h-10 shrink-0 items-center gap-1 rounded-full px-3 text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:pointer-events-none disabled:opacity-30 dark:text-purple-200 dark:hover:bg-white/10"
             >
               <ChevronLeft className="h-4 w-4" />
               <span className="hidden sm:inline">Previous</span>
             </button>
 
-            <div className="flex items-center gap-1.5" aria-label={`Letter ${index + 1} of ${letters.length}`} role="group">
+            <div className="flex min-w-0 items-center gap-1.5" aria-label={`Letter ${index + 1} of ${letters.length}`} role="group">
               {letters.length <= 9 ? (
                 letters.map((l, i) => (
                   <button
@@ -236,7 +236,7 @@ export default function LetterReader({ letters, index, origin, fromName, onClose
               onClick={() => go(1)}
               disabled={!hasNext}
               aria-label="Next letter"
-              className="inline-flex h-10 items-center gap-1 rounded-full px-3 text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:pointer-events-none disabled:opacity-30 dark:text-purple-200 dark:hover:bg-white/10"
+              className="inline-flex h-10 shrink-0 items-center gap-1 rounded-full px-3 text-sm font-medium text-rose-600 transition hover:bg-rose-50 disabled:pointer-events-none disabled:opacity-30 dark:text-purple-200 dark:hover:bg-white/10"
             >
               <span className="hidden sm:inline">Next</span>
               <ChevronRight className="h-4 w-4" />
@@ -303,7 +303,7 @@ function LetterContent({ letter, fromName, instant, scrollRef, swipedRef }: Lett
 
   return (
     <div className="relative" onClick={handleClick}>
-      <h2 id={TITLE_ID} className="pr-2 pt-2 font-cursive text-[2.2rem] leading-[1.1] text-rose-600 sm:text-5xl dark:text-purple-200">
+      <h2 id={TITLE_ID} className="break-words pr-2 pt-2 font-cursive text-[2.2rem] leading-[1.1] text-rose-600 sm:text-5xl dark:text-purple-200">
         {title}
       </h2>
       {dateLabel && (

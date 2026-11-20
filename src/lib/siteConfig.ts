@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { DEFAULT_SITE_CONFIG, SiteConfig, Coupon, WheelPrize } from '@/data/love'
-import { getSetting, upsertSetting } from './supabase'
+import { getSetting, isCloudConfigured, upsertSetting } from './supabase'
 
 /**
  * Editable site content (names, dates, reasons, coupons, wheel prizes, words).
@@ -22,6 +22,8 @@ function sanitize(raw: unknown): SiteConfig {
   const strList = (v: unknown, fallback: string[]) =>
     Array.isArray(v) ? v.map((x) => String(x ?? '').trim()).filter(Boolean) : fallback
   const nonEmpty = <T,>(list: T[], fallback: T[]) => (list.length > 0 ? list : fallback)
+  // Duplicate lines would stop "seen them all" features (e.g. the reasons jar) from ever completing.
+  const unique = (list: string[]) => [...new Set(list)]
 
   const coupons = Array.isArray(r.coupons)
     ? r.coupons
@@ -43,8 +45,8 @@ function sanitize(raw: unknown): SiteConfig {
     anniversaryDate: isDateString(r.anniversaryDate) ? r.anniversaryDate : '',
     birthdayDate: isDateString(r.birthdayDate) ? r.birthdayDate : '',
     yearsTogether: Number.isFinite(Number(r.yearsTogether)) && Number(r.yearsTogether) > 0 ? Math.round(Number(r.yearsTogether)) : d.yearsTogether,
-    nicknames: nonEmpty(strList(r.nicknames, d.nicknames), d.nicknames),
-    reasons: nonEmpty(strList(r.reasons, d.reasons), d.reasons),
+    nicknames: nonEmpty(unique(strList(r.nicknames, d.nicknames)), d.nicknames),
+    reasons: nonEmpty(unique(strList(r.reasons, d.reasons)), d.reasons),
     coupons: nonEmpty(coupons, d.coupons),
     wheelPrizes: wheelPrizes.length >= 2 ? wheelPrizes : d.wheelPrizes,
     secretWords: nonEmpty(secretWords, d.secretWords),
@@ -78,22 +80,38 @@ let inflight: Promise<SiteConfig> | null = null
 let current: SiteConfig | null = null
 const listeners = new Set<(c: SiteConfig) => void>()
 
+/**
+ * The cloud config, else the local copy, else the defaults. `cloudUnreadable`
+ * is true when a connected cloud couldn't be read, i.e. the config returned may
+ * not be the one that is actually saved.
+ */
+async function loadConfig(): Promise<{ config: SiteConfig; cloudUnreadable: boolean }> {
+  const result = await getSetting(TITLE)
+  if (result.reachable && result.content) {
+    try {
+      const parsed = sanitize(JSON.parse(result.content))
+      writeLocal(parsed)
+      return { config: parsed, cloudUnreadable: false }
+    } catch (e) {
+      console.warn('Site config in the cloud is not valid JSON, using local copy:', e)
+    }
+  }
+  return { config: readLocal() ?? DEFAULT_SITE_CONFIG, cloudUnreadable: !result.reachable && isCloudConfigured() }
+}
+
+/**
+ * For the admin editor: a fresh load that also says whether the cloud couldn't
+ * be read. Saving a form built from a fallback copy would overwrite the real
+ * settings, so the editor must not save in that case.
+ */
+export function fetchSiteConfigForEditing(): Promise<{ config: SiteConfig; cloudUnreadable: boolean }> {
+  return loadConfig()
+}
+
 /** Loads the config from the cloud (falls back to the local copy, then defaults). Cached per page load. */
 export function fetchSiteConfig(force = false): Promise<SiteConfig> {
   if (inflight && !force) return inflight
-  inflight = (async () => {
-    const result = await getSetting(TITLE)
-    if (result.reachable && result.content) {
-      try {
-        const parsed = sanitize(JSON.parse(result.content))
-        writeLocal(parsed)
-        return parsed
-      } catch (e) {
-        console.warn('Site config in the cloud is not valid JSON, using local copy:', e)
-      }
-    }
-    return readLocal() ?? DEFAULT_SITE_CONFIG
-  })()
+  inflight = loadConfig().then((r) => r.config)
   inflight.then((c) => {
     current = c
     listeners.forEach((l) => l(c))
@@ -142,7 +160,11 @@ export function useSiteConfig(): { config: SiteConfig; loaded: boolean } {
 /** Whole days/hours/minutes/seconds since a YYYY-MM-DD date (local time). */
 export function timeSince(dateStr: string, now = new Date()) {
   const start = new Date(`${dateStr}T00:00:00`)
-  let ms = Math.max(0, now.getTime() - start.getTime())
+  if (Number.isNaN(start.getTime()) || start.getTime() > now.getTime()) {
+    // Unknown or future date: count nothing rather than mixing negative calendar maths.
+    return { totalDays: 0, hours: 0, minutes: 0, seconds: 0, years: 0, months: 0, days: 0 }
+  }
+  let ms = now.getTime() - start.getTime()
   const totalDays = Math.floor(ms / 86400000)
   ms -= totalDays * 86400000
   const hours = Math.floor(ms / 3600000)

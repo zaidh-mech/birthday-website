@@ -19,11 +19,42 @@ interface CardStatus {
   hasRecord: boolean
 }
 
+/**
+ * Games that keep a separate best per size / difficulty (in their `data`). Their
+ * top-level `best` mixes all levels (an easy 3×3 always "wins"), so show each one.
+ */
+const LEVEL_BESTS: Record<string, { key: string; label: string }[]> = {
+  'memory-match': [
+    { key: 'best-easy', label: 'Easy' },
+    { key: 'best-medium', label: 'Medium' },
+    { key: 'best-hard', label: 'Hard' },
+  ],
+  puzzle: [
+    { key: 'best-3', label: '3×3' },
+    { key: 'best-4', label: '4×4' },
+    { key: 'best-5', label: '5×5' },
+  ],
+}
+
+function levelBestText(rec: Records[string], gameId: string): string | null {
+  const levels = LEVEL_BESTS[gameId]
+  if (!levels) return null
+  const data: Record<string, unknown> = rec.data && typeof rec.data === 'object' ? rec.data : {}
+  const parts = levels.flatMap(({ key, label }) => {
+    const value = data[key]
+    return typeof value === 'number' && Number.isFinite(value) ? [`${label}: ${value}`] : []
+  })
+  if (parts.length === 0) return null
+  return parts.length === 1 ? `Best ${parts[0]} moves` : `Best ${parts.join(' · ')}`
+}
+
 function statusFor(records: Records | null, index: number): CardStatus | null {
   if (!records) return null
   const game = GAMES[index]
   const rec = records[game.id] ?? {}
   if (game.bestLabel) {
+    const perLevel = levelBestText(rec, game.id)
+    if (perLevel) return { text: perLevel, hasRecord: true }
     if (typeof rec.best === 'number') return { text: game.bestLabel(rec.best), hasRecord: true }
     return { text: 'No score yet', hasRecord: false }
   }

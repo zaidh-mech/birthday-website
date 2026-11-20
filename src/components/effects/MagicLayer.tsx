@@ -11,8 +11,8 @@ import { toast } from './Toast'
 /** Taps here never pop hearts (typing, media, game canvases, opted-out areas). */
 const NO_BURST =
   'input, textarea, select, option, [contenteditable]:not([contenteditable="false"]), [data-no-burst], canvas, video, audio, iframe, [role="slider"]'
-/** On game pages, the board's own buttons give their own feedback. */
-const GAME_CONTROLS = 'button, a, [role="button"], [role="gridcell"], label'
+/** On game pages, the board's own buttons (and focusable boards like the puzzle) give their own feedback. */
+const GAME_CONTROLS = 'button, a, [role="button"], [role="gridcell"], label, [tabindex]:not([tabindex="-1"])'
 /** No sparkle trail over these. */
 const NO_TRAIL = 'canvas, [data-no-burst], [data-no-trail], input, textarea, select, [contenteditable]:not([contenteditable="false"])'
 

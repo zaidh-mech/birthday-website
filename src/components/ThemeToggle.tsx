@@ -100,6 +100,9 @@ export default function ThemeToggle() {
   if (path === '/admin' || path.startsWith('/admin/')) return null
 
   const dark = mounted && resolvedTheme === 'dark'
+  // On short landscape phones the cluster would sit on top of a game board or its keyboard;
+  // games have their own sound button, so step aside there.
+  const inGame = path.startsWith('/games/')
 
   const switchTheme = () => {
     if (switching.current) return
@@ -170,7 +173,7 @@ export default function ThemeToggle() {
     <div
       role="group"
       aria-label="Theme and sound"
-      className="fixed bottom-[max(1rem,env(safe-area-inset-bottom,0px))] right-4 z-50 flex items-center gap-1 rounded-full border border-white/70 bg-white/70 p-1 shadow-[0_10px_30px_-12px_rgba(244,63,94,0.45)] backdrop-blur-xl transition-colors duration-700 md:bottom-auto md:right-4 md:top-6 md:flex-col lg:right-6 dark:border-white/10 dark:bg-[#11121a]/70 dark:shadow-[0_10px_30px_-12px_rgba(168,85,247,0.55)]"
+      className={`${inGame ? 'max-md:[@media(max-height:500px)]:hidden ' : ''}fixed bottom-[max(1rem,env(safe-area-inset-bottom,0px))] right-4 z-50 flex items-center gap-1 rounded-full border border-white/70 bg-white/70 p-1 shadow-[0_10px_30px_-12px_rgba(244,63,94,0.45)] backdrop-blur-xl transition-colors duration-700 md:bottom-auto md:right-4 md:top-6 md:flex-col lg:right-6 dark:border-white/10 dark:bg-[#11121a]/70 dark:shadow-[0_10px_30px_-12px_rgba(168,85,247,0.55)]`}
     >
       <button
         ref={themeButton}

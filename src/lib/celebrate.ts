@@ -70,6 +70,10 @@ export function burstFromElement(el: Element | null, options: Omit<BurstOptions,
   })
 }
 
+/** When the shared side-cannon loop of celebrate() stops, and whether it is running. */
+let cannonEnd = 0
+let cannonRunning = false
+
 /** A big two-sided celebration for wins and "yes!" moments (~2.5s). */
 export function celebrate(durationMs = 2500): void {
   if (typeof window === 'undefined') return
@@ -78,13 +82,18 @@ export function celebrate(durationMs = 2500): void {
     return
   }
   const heart = getHeartShape()
-  const end = Date.now() + durationMs
-  const frame = () => {
-    confetti({ particleCount: 4, angle: 60, spread: 60, origin: { x: 0, y: 0.7 }, colors: ROSE_PALETTE, zIndex: 9999 })
-    confetti({ particleCount: 4, angle: 120, spread: 60, origin: { x: 1, y: 0.7 }, colors: ROSE_PALETTE, zIndex: 9999 })
-    if (Date.now() < end) requestAnimationFrame(frame)
+  // Repeated calls extend the one running loop instead of stacking extra loops.
+  cannonEnd = Math.max(cannonEnd, Date.now() + durationMs)
+  if (!cannonRunning) {
+    cannonRunning = true
+    const frame = () => {
+      confetti({ particleCount: 4, angle: 60, spread: 60, origin: { x: 0, y: 0.7 }, colors: ROSE_PALETTE, zIndex: 9999 })
+      confetti({ particleCount: 4, angle: 120, spread: 60, origin: { x: 1, y: 0.7 }, colors: ROSE_PALETTE, zIndex: 9999 })
+      if (Date.now() < cannonEnd) requestAnimationFrame(frame)
+      else cannonRunning = false
+    }
+    frame()
   }
-  frame()
   burst({ particleCount: 60, hearts: Boolean(heart), y: 0.5, spread: 100 })
 }
 

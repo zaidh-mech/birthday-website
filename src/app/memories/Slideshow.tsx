@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react'
 import { motion, AnimatePresence, useInView, useMotionValue, useReducedMotion, type PanInfo } from 'framer-motion'
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2, Music, Pause, Play } from 'lucide-react'
 import { playHappyBirthday, sfx, stopMelody } from '@/lib/sound'
@@ -20,6 +20,12 @@ const KEN_BURNS = [
   { x0: '2%', y0: '2%', s0: 1.04, x1: '-3%', y1: '-1%', s1: 1.13 },
   { x0: '0%', y0: '-2%', s0: 1.16, x1: '0%', y1: '2%', s1: 1.02 },
 ]
+
+function subscribeVisibility(onChange: () => void) {
+  document.addEventListener('visibilitychange', onChange)
+  return () => document.removeEventListener('visibilitychange', onChange)
+}
+const isPageVisible = () => document.visibilityState !== 'hidden'
 
 interface SlideshowProps {
   items: ViewerItem[]
@@ -41,9 +47,11 @@ export default function Slideshow({ items, suspended }: SlideshowProps) {
   const stripRef = useRef<HTMLDivElement>(null)
   const panned = useRef(false)
   const inView = useInView(wrapperRef, { amount: 0.35 })
+  // A hidden browser tab pauses everything (the RAF already stops; the Ken Burns CSS and the music box must too).
+  const pageVisible = useSyncExternalStore(subscribeVisibility, isPageVisible, () => true)
 
   const fullscreen = nativeFs || pseudoFs
-  const active = playing && !suspended && (inView || fullscreen) && count > 1
+  const active = playing && !suspended && pageVisible && (inView || fullscreen) && count > 1
   const safeIndex = count ? Math.min(index, count - 1) : 0
   const item = items[safeIndex]
 
@@ -110,7 +118,7 @@ export default function Slideshow({ items, suspended }: SlideshowProps) {
 
   // "With music": loop the music box while playing.
   useEffect(() => {
-    if (!music || !playing || suspended) return
+    if (!music || !playing || suspended || !pageVisible) return
     let timer = 0
     const play = () => {
       const duration = playHappyBirthday()
@@ -121,7 +129,7 @@ export default function Slideshow({ items, suspended }: SlideshowProps) {
       window.clearTimeout(timer)
       stopMelody()
     }
-  }, [music, playing, suspended])
+  }, [music, playing, suspended, pageVisible])
 
   // Native fullscreen bookkeeping.
   useEffect(() => {

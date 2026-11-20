@@ -7,13 +7,16 @@ import { format } from 'date-fns'
 const fieldBase =
   'w-full min-w-0 bg-white text-gray-900 placeholder:text-gray-400 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-200 focus:border-rose-300 disabled:opacity-60'
 
-/** Shared class names so every admin page looks the same. (Don't append conflicting utilities: pick a variant.) */
+/**
+ * Shared class names so every admin page looks the same. (Don't append conflicting utilities: pick a variant.)
+ * Fields stay at 16px on phones: iOS Safari zooms the page into any field smaller than that.
+ */
 export const ui = {
   card: 'bg-white p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl shadow-sm border border-gray-100',
-  input: `${fieldBase} px-3.5 py-2.5 text-sm`,
-  inputSm: `${fieldBase} px-2.5 py-2 text-xs`,
-  textarea: `${fieldBase} px-3.5 py-3 text-sm leading-relaxed resize-y`,
-  mono: `${fieldBase} px-3.5 py-2.5 text-xs font-mono break-all`,
+  input: `${fieldBase} px-3.5 py-2.5 text-base sm:text-sm`,
+  inputSm: `${fieldBase} px-2.5 py-2 text-base sm:text-xs`,
+  textarea: `${fieldBase} px-3.5 py-3 text-base sm:text-sm leading-relaxed resize-y`,
+  mono: `${fieldBase} px-3.5 py-2.5 text-base sm:text-xs font-mono break-all`,
   letter: `${fieldBase} p-4 text-base font-serif leading-relaxed resize-y`,
   label: 'block text-xs font-semibold text-gray-700 mb-1',
   hint: 'text-xs text-gray-500',

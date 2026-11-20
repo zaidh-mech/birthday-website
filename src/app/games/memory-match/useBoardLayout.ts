@@ -51,6 +51,17 @@ function candidatesFor(total: number, availW: number, availH: number, gap: numbe
     const byH = (availH - gap * (rows - 1)) / rows / CARD_ASPECT
     out.push({ cols, rows, byW, byH, fit: Math.min(byW, byH) })
   }
+  if (out.length === 0) {
+    // Awkward counts (e.g. 22 = 2 × 11, when there are only 11 photos): allow a
+    // partly filled last row instead of returning nothing.
+    for (let cols = 2; cols <= Math.min(8, total); cols++) {
+      const rows = Math.ceil(total / cols)
+      if (rows > 8) continue
+      const byW = (availW - gap * (cols - 1)) / cols
+      const byH = (availH - gap * (rows - 1)) / rows / CARD_ASPECT
+      out.push({ cols, rows, byW, byH, fit: Math.min(byW, byH) })
+    }
+  }
   return out
 }
 

@@ -35,6 +35,8 @@ export default function PhotoLightbox({ items, index, onClose, onIndexChange }: 
   const mounted = useMounted()
   const dialogRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
+  // A mouse swipe that ends off the photo fires its click on the backdrop; that must not close the viewer.
+  const pressedPhoto = useRef(false)
   const [dir, setDir] = useState(0)
   const open = index !== null && items.length > 0
   const current = open ? items[((index % items.length) + items.length) % items.length] : null
@@ -82,18 +84,14 @@ export default function PhotoLightbox({ items, index, onClose, onIndexChange }: 
     return () => window.removeEventListener('keydown', onKey)
   }, [open, go, onClose])
 
-  // Lock page scroll while open (compensating for the scrollbar so nothing jumps).
+  // Lock page scroll while open. html keeps a stable scrollbar gutter, so nothing jumps.
   useEffect(() => {
     if (!open) return
     const body = document.body
     const prevOverflow = body.style.overflow
-    const prevPadding = body.style.paddingRight
-    const scrollbar = window.innerWidth - document.documentElement.clientWidth
     body.style.overflow = 'hidden'
-    if (scrollbar > 0) body.style.paddingRight = `${scrollbar}px`
     return () => {
       body.style.overflow = prevOverflow
-      body.style.paddingRight = prevPadding
     }
   }, [open])
 
@@ -141,7 +139,12 @@ export default function PhotoLightbox({ items, index, onClose, onIndexChange }: 
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.25 }}
-          onClick={onClose}
+          onPointerDownCapture={() => {
+            pressedPhoto.current = false
+          }}
+          onClick={() => {
+            if (!pressedPhoto.current) onClose()
+          }}
           className="fixed inset-0 z-[80] flex flex-col items-center justify-center bg-black/80 px-3 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-md sm:px-6"
         >
           <button
@@ -168,6 +171,9 @@ export default function PhotoLightbox({ items, index, onClose, onIndexChange }: 
                 dragConstraints={{ left: 0, right: 0 }}
                 dragElastic={0.6}
                 onDragEnd={onDragEnd}
+                onPointerDown={() => {
+                  pressedPhoto.current = true
+                }}
                 onClick={(e) => e.stopPropagation()}
                 className="flex max-h-full max-w-full cursor-grab touch-pan-y flex-col items-center rounded-[4px] bg-white p-2 pb-3 shadow-2xl active:cursor-grabbing sm:p-3 sm:pb-4"
               >

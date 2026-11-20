@@ -43,6 +43,8 @@ export function setSoundEnabled(value: boolean): void {
   } catch {
     /* storage may be blocked */
   }
+  // Muting means silence: also stop a song that is playing.
+  if (!value) stopMelody()
   listeners.forEach((l) => l())
 }
 
@@ -76,11 +78,45 @@ function getContext(): AudioContext | null {
       master.gain.value = 0.32
       master.connect(ctx.destination)
     }
-    if (ctx.state === 'suspended') void ctx.resume().catch(() => {})
+    // 'suspended', or iOS Safari's 'interrupted' after a call / backgrounding.
+    if (ctx.state !== 'running') void ctx.resume().catch(() => {})
     return ctx
   } catch {
     return null
   }
+}
+
+/**
+ * iOS Safari (and Chrome for touch) only let an AudioContext start inside a real
+ * user gesture — touchend / pointerup / click / keydown, not touchstart or
+ * pointermove, which is where scratching and dragging make their sounds. So
+ * create / resume the context on every such gesture anywhere on the page.
+ */
+function unlockAudio() {
+  if (ctx) {
+    if (ctx.state !== 'running') void ctx.resume().catch(() => {})
+  } else if (readEnabled()) {
+    getContext()
+  }
+}
+
+if (typeof window !== 'undefined') {
+  for (const type of ['pointerup', 'touchend', 'click', 'keydown']) {
+    window.addEventListener(type, unlockAudio, { capture: true, passive: true })
+  }
+}
+
+/**
+ * While the context is suspended its clock is frozen, so every effect queued
+ * outside a gesture (e.g. scratch noise on touch pointermove) would fire all at
+ * once when it finally resumes. Those are skipped; inside a gesture the resume
+ * goes through, so the effect is kept and plays a moment later. The song
+ * (`force`) is always scheduled.
+ */
+function ready(ac: AudioContext, force: boolean): boolean {
+  if (force || ac.state === 'running') return true
+  const activation = (navigator as Navigator & { userActivation?: { isActive: boolean } }).userActivation
+  return activation ? activation.isActive : true
 }
 
 interface ToneOptions {
@@ -97,7 +133,7 @@ interface ToneOptions {
 function tone({ freq, at = 0, duration = 0.15, type = 'sine', gain = 0.3, slideTo, attack = 0.004 }: ToneOptions, force = false, out?: AudioNode) {
   if (!force && !readEnabled()) return
   const ac = getContext()
-  if (!ac || !master) return
+  if (!ac || !master || !ready(ac, force)) return
   const t0 = ac.currentTime + at
   const osc = ac.createOscillator()
   const g = ac.createGain()
@@ -123,7 +159,7 @@ function bell(freq: number, at = 0, duration = 0.9, gain = 0.22, force = false, 
 function noiseBurst(duration = 0.18, gain = 0.15, filterFreq = 1800) {
   if (!readEnabled()) return
   const ac = getContext()
-  if (!ac || !master) return
+  if (!ac || !master || !ready(ac, false)) return
   const length = Math.floor(ac.sampleRate * duration)
   const buffer = ac.createBuffer(1, length, ac.sampleRate)
   const data = buffer.getChannelData(0)

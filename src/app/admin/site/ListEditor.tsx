@@ -23,6 +23,7 @@ export default function ListEditor<T extends { id: string }>({
   makeNew,
   itemName,
   min = 0,
+  max,
 }: {
   items: T[]
   onChange: (items: T[]) => void
@@ -30,7 +31,10 @@ export default function ListEditor<T extends { id: string }>({
   makeNew: () => T
   itemName: string
   min?: number
+  /** Most items allowed; the Add button is disabled once the list is full. */
+  max?: number
 }) {
+  const full = max !== undefined && items.length >= max
   const update = (index: number, key: Extract<keyof T, string>, value: string) => {
     onChange(items.map((item, i) => (i === index ? ({ ...item, [key]: value } as T) : item)))
   }
@@ -135,9 +139,21 @@ export default function ListEditor<T extends { id: string }>({
           )
         })}
       </ol>
-      <button type="button" onClick={() => onChange([...items, makeNew()])} className={`${ui.secondaryButton} w-full border border-dashed border-gray-300`}>
+      <button
+        type="button"
+        onClick={() => {
+          if (!full) onChange([...items, makeNew()])
+        }}
+        disabled={full}
+        className={`${ui.secondaryButton} w-full border border-dashed border-gray-300`}
+      >
         <Plus className="w-4 h-4" aria-hidden="true" /> Add {itemName}
       </button>
+      {full && (
+        <p className={ui.hint}>
+          That&apos;s the most that fit ({max} {itemName}s). Remove one to add another.
+        </p>
+      )}
     </div>
   )
 }

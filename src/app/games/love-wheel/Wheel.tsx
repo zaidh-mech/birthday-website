@@ -141,7 +141,9 @@ export default function Wheel({ prizes, reducedMotion, disabled = false, winnerI
     }
     applyFlap()
 
-    if (active) s.raf = requestAnimationFrame(frame)
+    // setRotation() may already have queued the next frame via kick() (peg crossed);
+    // scheduling again would fork a second loop on every peg.
+    if (active && !s.raf) s.raf = requestAnimationFrame(frame)
   }
 
   const kick = () => {
@@ -194,6 +196,12 @@ export default function Wheel({ prizes, reducedMotion, disabled = false, winnerI
       velocity !== null && Math.abs(velocity) >= FLICK_MIN_SPEED
         ? velocity
         : direction * (NORMAL_SPIN_MIN + Math.random() * (NORMAL_SPIN_MAX - NORMAL_SPIN_MIN))
+    // A spin started from the button/keyboard while a finger is still on the disc
+    // ends that drag, so pointer moves can't push the wheel off the announced prize.
+    if (s.drag) {
+      s.drag = null
+      setGrabbing(false)
+    }
     const plan = planSpin({ from: s.rot, count: L.count, velocity: v, reduced: L.reducedMotion })
     s.anim = { from: plan.from, to: plan.to, duration: plan.duration, start: performance.now() }
     s.spinning = true

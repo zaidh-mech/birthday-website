@@ -64,7 +64,8 @@ export default function PuzzlePlay({
   const size = useBoardSize(containerRef, game.n)
   const pieces = game.n * game.n - 1
   const solved = stage.startsWith('win')
-  const correct = solved ? pieces : countCorrect(game.board)
+  // During the intro the board is still the solved picture; don't report 8/8 before the scramble.
+  const correct = solved ? pieces : stage.startsWith('intro') ? 0 : countCorrect(game.board)
   const pct = Math.round((correct / pieces) * 100)
   const dateLabel = photoDateLabel(game.photo)
   const ready = size > 0
@@ -76,10 +77,13 @@ export default function PuzzlePlay({
       const el = containerRef.current
       if (!el) return
       const rect = el.getBoundingClientRect()
-      const boardBottom = rect.top + size + FRAME_PAD * 2
+      const boardH = size + FRAME_PAD * 2
+      const boardBottom = rect.top + boardH
       if (rect.top >= 96 && boardBottom <= window.innerHeight) return
-      // Leave room above for the moves / time chips.
-      const top = Math.max(0, rect.top + window.scrollY - 170)
+      // Leave room above for the moves / time chips, but less on short (landscape)
+      // screens so the bottom row of tiles isn't left cut off.
+      const offset = Math.max(96, Math.min(170, window.innerHeight - boardH - 12))
+      const top = Math.max(0, rect.top + window.scrollY - offset)
       window.scrollTo({ top, behavior: reducedMotion ? 'auto' : 'smooth' })
     })
     return () => window.cancelAnimationFrame(id)

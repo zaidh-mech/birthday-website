@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, useAnimate } from 'framer-motion'
 import { ChevronDown, Heart, ScrollText } from 'lucide-react'
 import { useSiteConfig } from '@/lib/siteConfig'
@@ -24,7 +24,8 @@ const EMPTY: JarProgress = { discovered: [], round: [] }
 
 export default function ReasonsJarSection() {
   const { config } = useSiteConfig()
-  const reasons = config.reasons
+  // Duplicate lines from the admin textarea would keep the jar from ever emptying or completing.
+  const reasons = useMemo(() => Array.from(new Set(config.reasons)), [config.reasons])
   const name = petName(config.herName, config.nicknames)
   const reduce = usePrefersReducedMotion()
   const [progress, setProgress] = useLocalStorageState<JarProgress>('home_reasons_jar_v1', EMPTY)

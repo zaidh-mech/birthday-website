@@ -96,7 +96,8 @@ export default function EasterEggs({ inGame }: EasterEggsProps) {
           return
         }
       } else {
-        konamiIndex = key === KONAMI[0] ? 1 : 0
+        // An extra ↑ (↑↑↑↓…) still leaves the last two keys as ↑↑
+        konamiIndex = key === KONAMI[0] ? (konamiIndex === 2 ? 2 : 1) : 0
       }
 
       if (inGameRef.current || !/^[a-z]$/i.test(e.key)) return

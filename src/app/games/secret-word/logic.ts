@@ -168,6 +168,9 @@ export function cleanWords(words: readonly string[]): string[] {
   return unique.length > 0 ? unique : [...DEFAULT_SECRET_WORDS]
 }
 
+/** Daily words are chained from this day, so "never the same word twice in a row" holds exactly. */
+const DAILY_EPOCH = new Date(2025, 0, 1)
+
 /**
  * Today's word: deterministic for the calendar day (everyone opening the
  * site on the same day gets the same word). If the pick happens to equal
@@ -176,10 +179,19 @@ export function cleanWords(words: readonly string[]): string[] {
  */
 export function pickDailyWord(words: readonly string[], date = new Date()): string {
   const list = cleanWords(words)
-  const indexFor = (d: Date) => Math.floor(seededRandom(todaySeed(d))() * list.length) % list.length
-  let index = indexFor(date)
-  const yesterday = new Date(date.getFullYear(), date.getMonth(), date.getDate() - 1)
-  if (list.length > 1 && index === indexFor(yesterday)) index = (index + 1) % list.length
+  if (list.length < 2) return list[0]
+  const day = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const indexFor = (daysAgo: number) =>
+    Math.floor(seededRandom(todaySeed(new Date(day.getFullYear(), day.getMonth(), day.getDate() - daysAgo)))() * list.length) % list.length
+  // Compare with the word yesterday actually got (after its own bump), not just
+  // its raw pick: replay the rule forward from a fixed day (cheap, a few
+  // thousand PRNG calls at most).
+  const replay = Math.max(14, Math.round((day.getTime() - DAILY_EPOCH.getTime()) / 86400000))
+  let index = indexFor(replay)
+  for (let daysAgo = replay - 1; daysAgo >= 0; daysAgo--) {
+    const raw = indexFor(daysAgo)
+    index = raw === index ? (raw + 1) % list.length : raw
+  }
   return list[index]
 }
 

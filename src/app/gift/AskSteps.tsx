@@ -92,6 +92,8 @@ export function InviteStep({ years, fromName, existing, reduce, onYes, onNo, onV
 /* ------------------------------------------------------------------ */
 
 const MAX_DODGES = 7
+/** Once it gives up, the No button grows back to this size. */
+const TIRED_SCALE = 0.85
 const NO_LABELS = ['Still no', 'Nope 🙅‍♀️', 'Catch me 😜', 'Too slow!', 'Hehe 🤭', 'Nuh-uh', 'So… tired…', 'Okay fine 😮‍💨']
 const YES_LABELS = ['Fine, yes!', 'Yes! 💕', 'YES 💖', 'YESSS 💖', 'Obviously yes 😍']
 
@@ -112,7 +114,7 @@ export function PleadStep({ reduce, onYes, onNo }: PleadStepProps) {
   const [yesScale, setYesScale] = useState(1)
 
   const tired = dodges >= MAX_DODGES
-  const noScale = tired ? 0.85 : Math.max(0.55, 1 - dodges * 0.065)
+  const noScale = tired ? TIRED_SCALE : Math.max(0.55, 1 - dodges * 0.065)
 
   const moveTo = useCallback(
     (tx: number, ty: number) => {
@@ -141,16 +143,32 @@ export function PleadStep({ reduce, onYes, onNo }: PleadStepProps) {
       // Untransformed (natural) centre of the button, relative to the card.
       const natX = btnRect.left + btnRect.width / 2 - x.get() - cardRect.left
       const natY = btnRect.top + btnRect.height / 2 - y.get() - cardRect.top
-      const nextScale = Math.max(0.55, 1 - (dodges + 1) * 0.065)
+      // The last escape leaves it "tired" and grown back to TIRED_SCALE, so keep room for that size.
+      const nextScale = dodges + 1 >= MAX_DODGES ? TIRED_SCALE : Math.max(0.55, 1 - (dodges + 1) * 0.065)
       const halfW = (btn.offsetWidth * nextScale) / 2
       const halfH = (btn.offsetHeight * nextScale) / 2
       const pad = 14
       const yes = yesRef.current?.getBoundingClientRect()
 
+      // Where the centre may land (card coordinates): inside the card and, when enough of the card is
+      // on screen, inside the visible part of it — clear of the fixed nav at the top and (on phones)
+      // the floating theme/sound buttons at the bottom, so it never hides off-screen or under them.
+      const wide = window.innerWidth >= 768
+      const minX = pad + halfW
+      const maxX = Math.max(minX, cardRect.width - pad - halfW)
+      let minY = pad + halfH
+      let maxY = Math.max(minY, cardRect.height - pad - halfH)
+      const visTop = (wide ? 120 : 84) + halfH - cardRect.top
+      const visBottom = window.innerHeight - (wide ? 16 : 80) - halfH - cardRect.top
+      if (Math.min(maxY, visBottom) - Math.max(minY, visTop) > 0) {
+        minY = Math.max(minY, visTop)
+        maxY = Math.min(maxY, visBottom)
+      }
+
       let best: { cx: number; cy: number } | null = null
       for (let i = 0; i < 30; i++) {
-        const cx = pad + halfW + Math.random() * Math.max(0, cardRect.width - 2 * (pad + halfW))
-        const cy = pad + halfH + Math.random() * Math.max(0, cardRect.height - 2 * (pad + halfH))
+        const cx = minX + Math.random() * (maxX - minX)
+        const cy = minY + Math.random() * (maxY - minY)
         const vx = cardRect.left + cx
         const vy = cardRect.top + cy
         const hitsYes =
@@ -163,7 +181,7 @@ export function PleadStep({ reduce, onYes, onNo }: PleadStepProps) {
         }
         if (!best && !hitsYes) best = { cx, cy }
       }
-      if (!best) best = { cx: pad + halfW, cy: pad + halfH }
+      if (!best) best = { cx: minX, cy: minY }
 
       moveTo(best.cx - natX, best.cy - natY)
       // "Yes" grows with every escape, but never wider than the card.
@@ -177,9 +195,15 @@ export function PleadStep({ reduce, onYes, onNo }: PleadStepProps) {
     [dodges, moveTo, x, y],
   )
 
-  // If the window changes size, bring the button home so it can't end up outside the card.
+  // If the window's width changes, bring the button home so it can't end up outside the card.
+  // Height-only resizes (phone toolbars sliding away while scrolling) don't reflow the card: ignore them.
   useEffect(() => {
-    const reset = () => moveTo(0, 0)
+    let width = window.innerWidth
+    const reset = () => {
+      if (window.innerWidth === width) return
+      width = window.innerWidth
+      moveTo(0, 0)
+    }
     window.addEventListener('resize', reset)
     return () => window.removeEventListener('resize', reset)
   }, [moveTo])
@@ -224,7 +248,7 @@ export function PleadStep({ reduce, onYes, onNo }: PleadStepProps) {
         <br />
         <span className="text-rose-400 dark:text-purple-300">I really, really want to take you…</span> so will you come, please?
       </h2>
-      <p className="mt-3 min-h-[1.5rem] text-sm italic text-gray-500 dark:text-gray-400" aria-live="polite">
+      <p className="mt-3 min-h-[2.5rem] text-sm italic sm:min-h-[1.5rem] text-gray-500 dark:text-gray-400" aria-live="polite">
         {dodges === 0 ? '' : tired ? 'Fine, the No button gave up. It’s exhausted 😮‍💨' : 'Psst… the No button is a little shy 🤭'}
       </p>
 

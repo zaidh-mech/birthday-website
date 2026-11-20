@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import MemoriesContainer from './MemoriesContainer'
 
 export const metadata: Metadata = {
-  title: 'Our Memories · 5 Years & Happy Birthday',
+  title: 'Our Memories',
   description: 'Every photo of us so far: a memory lane, an album and a slideshow, kept safe behind a little love-letter vault.',
 }
 

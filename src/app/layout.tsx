@@ -60,7 +60,7 @@ export default function RootLayout({
           <Background />
           <Navigation />
           <ThemeToggle />
-          <div id="main-content" tabIndex={-1} className="flex w-full flex-1 flex-col outline-none">
+          <div id="main-content" tabIndex={-1} className="flex w-full flex-1 flex-col overflow-x-clip outline-none">
             {children}
           </div>
           <SiteEffects />
